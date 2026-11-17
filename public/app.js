@@ -303,9 +303,6 @@ const btnUndo = el("btnUndo");
 const btnRedo = el("btnRedo");
 const btnReset = el("btnReset");
 
-// Copy résumé text (Print was removed at the user's request)
-const btnCopyText = el("btnCopyText");
-
 // Canvas status bar: edit status, page-fit estimate, zoom controls
 const editStatusDot = el("editStatusDot");
 const editStatusText = el("editStatusText");
@@ -1442,17 +1439,6 @@ cvDocumentPaper.addEventListener("input", () => {
   const caretNode = sel && sel.rangeCount > 0 ? sel.getRangeAt(0).startContainer : null;
   if (caretNode) refreshPlaceholderHighlightAt(caretNode);
   if (!el("workbenchError").hidden && !cvDocumentPaper.querySelector(".cv-placeholder")) hideWorkbenchError();
-});
-
-// Copy as plain text (handy for pasting into an application form)
-btnCopyText.addEventListener("click", async () => {
-  try {
-    const text = cvDocumentPaper.innerText.replace(/\n{3,}/g, "\n\n").trim();
-    await navigator.clipboard.writeText(text);
-    showToast("Copied to clipboard.");
-  } catch (err) {
-    showToast("Could not copy automatically. Select the text and copy it manually.", true);
-  }
 });
 
 const ZOOM_MIN = 0.25;
