@@ -633,7 +633,11 @@ async function handleCvFile(file) {
     const label = ext === "pdf" ? "PDF" : "Word document";
     console.error(`${label} Read Error:`, err);
     reportClientActivity("file_read_failed", err);
-    showError(describeFileReadError(err, ext));
+    showError({
+      title: "Couldn't read your file",
+      message: describeFileReadError(err, ext),
+      actions: [{ label: "Paste text instead", onClick: () => { el("workspaceError").hidden = true; switchSource("paste"); } }],
+    });
     removeFile();
   } finally {
     isProcessingFile = false;
@@ -857,15 +861,52 @@ cvFileRemove.addEventListener("click", (e) => {
 });
 
 // Workspace and workbench error banners & transient toast notifications.
-function showError(msg) {
-  el("workspaceErrorText").textContent = msg;
-  el("workspaceError").hidden = false;
+function renderAlertBox(boxId, bodyId, payload) {
+  const box = el(boxId);
+  const body = el(bodyId);
+  if (!box || !body) return;
+  body.textContent = "";
+  const opts = typeof payload === "string" ? { message: payload } : (payload || {});
+  if (opts.title) {
+    const strong = document.createElement("strong");
+    strong.className = "workspace-error__title";
+    strong.textContent = opts.title;
+    body.appendChild(strong);
+  }
+  if (opts.html) {
+    const span = document.createElement("span");
+    span.className = "workspace-error__msg";
+    span.innerHTML = opts.html;
+    body.appendChild(span);
+  } else if (opts.message) {
+    const span = document.createElement("span");
+    span.className = "workspace-error__msg";
+    span.textContent = opts.message;
+    body.appendChild(span);
+  }
+  if (Array.isArray(opts.actions) && opts.actions.length) {
+    const row = document.createElement("div");
+    row.className = "workspace-error__actions";
+    opts.actions.forEach(({ label, onClick }) => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "workspace-error__action";
+      btn.textContent = label;
+      btn.addEventListener("click", onClick);
+      row.appendChild(btn);
+    });
+    body.appendChild(row);
+  }
+  box.hidden = false;
+}
+
+function showError(payload) {
+  renderAlertBox("workspaceError", "workspaceErrorText", payload);
   if (!viewInput.hidden) el("workspaceError").scrollIntoView({ behavior: "smooth", block: "center" });
 }
 
-function showWorkbenchError(html) {
-  el("workbenchErrorText").innerHTML = html;
-  el("workbenchError").hidden = false;
+function showWorkbenchError(payload) {
+  renderAlertBox("workbenchError", "workbenchErrorText", typeof payload === "string" ? { html: payload } : payload);
 }
 function hideWorkbenchError() {
   el("workbenchError").hidden = true;
@@ -2218,9 +2259,21 @@ downloadPdfBtn.addEventListener("click", async () => {
   if (remainingPlaceholders.length) {
     const uniqueTexts = [...new Set(remainingPlaceholders.map((node) => node.textContent.trim()))];
     const items = uniqueTexts.map((text) => `<li><code>${escapeHtml(text)}</code></li>`).join("");
-    showWorkbenchError(
-      `<strong>Fill in ${uniqueTexts.length === 1 ? "this placeholder" : "these placeholders"} before downloading:</strong><ul class="workspace-error__list">${items}</ul>`
-    );
+    showWorkbenchError({
+      title: `Fill in ${uniqueTexts.length === 1 ? "this placeholder" : "these placeholders"} before downloading`,
+      html: `<ul class="workspace-error__list">${items}</ul>`,
+      actions: [{
+        label: "Jump to first",
+        onClick: () => {
+          hideWorkbenchError();
+          const first = cvDocumentPaper.querySelector(".cv-placeholder");
+          if (first) {
+            first.scrollIntoView({ behavior: "smooth", block: "center" });
+            first.click();
+          }
+        },
+      }],
+    });
     el("workbenchError").scrollIntoView({ behavior: "smooth", block: "center" });
     return;
   }
@@ -2295,7 +2348,11 @@ downloadPdfBtn.addEventListener("click", async () => {
   } catch (err) {
     console.error("PDF export failed:", err);
     reportClientActivity("export_failed", err);
-    showWorkbenchError("<strong>Couldn't create the PDF.</strong> Your edits are still here. Please try downloading again.");
+    showWorkbenchError({
+      title: "Couldn't create your PDF",
+      message: "Your edits are still safe here. Please try downloading again.",
+      actions: [{ label: "Try again", onClick: () => { hideWorkbenchError(); downloadPdfBtn?.click(); } }],
+    });
   } finally {
     downloadPdfBtn.disabled = false;
     downloadPdfBtn.classList.remove("is-building");
@@ -3271,11 +3328,12 @@ tailorBtn.addEventListener("click", async () => {
     } else {
       invalid[0].focus();
     }
-    showError(
-      invalid.length === 1
-        ? "Please fill in the highlighted field before tailoring."
-        : "Please fill in the highlighted fields before tailoring."
-    );
+    showError({
+      title: "Missing required details",
+      message: invalid.length === 1
+        ? "Fill in the highlighted field below to continue."
+        : "Fill in the highlighted fields below to continue.",
+    });
     return;
   }
 
@@ -3382,13 +3440,32 @@ tailorBtn.addEventListener("click", async () => {
   } catch (err) {
     showView("viewInput");
     if (err.name === "AbortError") {
-      showToast("Tailoring cancelled. Your inputs are still here.");
-    } else if (err.name === "TypeError" && /fetch/i.test(err.message || "")) {
+      showToast("Tailoring cancelled. Your details are still here.");
+    } else if (!navigator.onLine || (err.name === "TypeError" && /fetch|network/i.test(err.message || ""))) {
       reportClientActivity("tailoring_failed", err);
-      showError("Couldn't reach the server. Please check your connection and try again.");
+      showError({
+        title: !navigator.onLine ? "You're offline" : "Connection issue",
+        message: "Check your internet connection and try again. Your details are still here.",
+        actions: [{ label: "Try again", onClick: () => { el("workspaceError").hidden = true; tailorBtn.click(); } }],
+      });
     } else {
       reportClientActivity("tailoring_failed", err);
-      showError("We couldn’t finish your resume this time. Your details are still here. Please try again in a moment.");
+      const actions = [{ label: "Try again", onClick: () => { el("workspaceError").hidden = true; tailorBtn.click(); } }];
+      if (intensitySeg.dataset.value !== "light") {
+        actions.push({
+          label: "Use Light touch",
+          onClick: () => {
+            intensitySeg.querySelector('[data-val="light"]')?.click();
+            el("workspaceError").hidden = true;
+            tailorBtn.click();
+          },
+        });
+      }
+      showError({
+        title: "Couldn't finish your resume",
+        message: "Your details are still here. Please try again in a moment.",
+        actions,
+      });
     }
   } finally {
     stopMeasuredProgress();
@@ -3444,7 +3521,7 @@ function updateReadiness() {
   if (cvTextCountEl) cvTextCountEl.textContent = `${cvWords.toLocaleString()} ${cvWords === 1 ? "word" : "words"}`;
   const ready = !isProcessingFile && Boolean(cvText.value.trim() || cvImages.length) && Boolean(jobTitle.value.trim()) && words > 0;
   const status = el("readinessText");
-  if (ready && el("workspaceErrorText").textContent.startsWith("Please fill in the highlighted")) el("workspaceError").hidden = true;
+  if (ready && el("workspaceErrorText").textContent.startsWith("Missing required details")) el("workspaceError").hidden = true;
   status.classList.toggle("is-ready", ready);
   status.textContent = isProcessingFile ? "Reading your resume…" : ready ? "Ready to tailor" : "Add your resume, job title, and description";
   if (tailorBtn) tailorBtn.classList.toggle("is-incomplete", !ready && !isProcessingFile);

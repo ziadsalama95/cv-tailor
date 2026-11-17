@@ -729,10 +729,18 @@ export function initCvBuilder({ renderResume, onFinish, onDownloadPdf, onTailor,
 
   function requireName() {
     const data = buildCvDataFromState(state);
+    const nameInput = document.getElementById("bName");
     if (!data.name) {
       setActiveTab("basics");
-      const nameInput = document.getElementById("bName");
-      nameInput?.focus();
+      if (nameInput) {
+        nameInput.setAttribute("aria-invalid", "true");
+        nameInput.classList.add("is-invalid");
+        nameInput.focus();
+        nameInput.addEventListener("input", () => {
+          nameInput.removeAttribute("aria-invalid");
+          nameInput.classList.remove("is-invalid");
+        }, { once: true });
+      }
       showToast("Enter your full name to continue.", true);
       return null;
     }

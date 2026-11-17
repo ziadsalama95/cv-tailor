@@ -1,7 +1,59 @@
 /* Product workspace: editorial hierarchy, quiet surfaces, accessible controls. */
 [data-reveal] { opacity: 1; transform: none; }
-.workspace-error { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; padding: 14px 18px; margin: 0 0 18px; border: 1px solid var(--error-border); border-radius: 8px; background: var(--error-bg); color: var(--error-text); font-size: 13px; line-height: 1.6; }
-.workspace-error button { border: 0; background: none; color: inherit; font-size: 22px; min-width: 44px; min-height: 44px; cursor: pointer; }
+@keyframes alertSlideIn {
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.workspace-error {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 16px;
+  margin: 0 0 18px;
+  border: 1px solid var(--error-border);
+  border-left: 4px solid var(--error-text);
+  border-radius: 10px;
+  background: var(--error-bg);
+  color: var(--error-text);
+  font-size: 13px;
+  line-height: 1.55;
+  box-shadow: 0 8px 24px rgba(185, 28, 28, 0.08);
+  animation: alertSlideIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.workspace-error__icon { flex: none; display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 999px; background: rgba(185, 28, 28, 0.12); color: var(--error-text); margin-top: 1px; }
+html[data-theme="dark"] .workspace-error__icon { background: rgba(248, 113, 113, 0.16); }
+.workspace-error__body { flex: 1; min-width: 0; }
+.workspace-error__title { display: block; font-size: 13.5px; font-weight: 700; margin-bottom: 2px; }
+.workspace-error__msg { display: block; opacity: 0.94; }
+.workspace-error__actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.workspace-error__action {
+  border: 1px solid var(--error-border);
+  background: var(--panel-bg);
+  color: var(--error-text);
+  font: 600 12px var(--font-ui);
+  padding: 5px 11px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.14s ease, transform 0.1s ease;
+}
+.workspace-error__action:hover { background: rgba(185, 28, 28, 0.08); }
+.workspace-error__close {
+  flex: none;
+  border: 0;
+  background: none;
+  color: inherit;
+  font-size: 18px;
+  line-height: 1;
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.75;
+}
+.workspace-error__close:hover { background: rgba(185, 28, 28, 0.12); opacity: 1; }
 .workspace-error__list { margin: 6px 0 0; padding-left: 18px; }
 .workspace-error__list li { margin: 2px 0; }
 .workspace-error__list code { font-weight: 700; }
