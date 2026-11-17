@@ -3412,16 +3412,6 @@ tailorBtn.addEventListener("click", async () => {
 
   const topbarCta = document.getElementById("topbarCta");
   if (topbarCta) topbarCta.addEventListener("click", scrollToResumeStep);
-
-  const howItWorksSection = document.getElementById("howItWorks");
-  if (howItWorksSection) {
-    document.querySelectorAll('a[href="#howItWorks"]').forEach((link) => {
-      link.addEventListener("click", (e) => {
-        e.preventDefault();
-        howItWorksSection.scrollIntoView({ behavior: "smooth", block: "start" });
-      });
-    });
-  }
 })();
 
 // Workspace guidance is derived from the actual inputs, never a simulated score.
