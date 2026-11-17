@@ -3538,15 +3538,30 @@ async function switchSource(mode) {
   sourceMode = mode;
   sourceUpload.setAttribute("aria-pressed", String(mode === "upload"));
   sourcePaste.setAttribute("aria-pressed", String(mode === "paste"));
-  cvText.hidden = mode !== "paste";
   const cvTextCaption = el("cvTextCaption");
-  if (cvTextCaption) cvTextCaption.hidden = mode !== "paste";
-  cvDropZone.hidden = mode === "paste";
-  if (mode === "paste") cvText.value = pastedResume;
-  markFieldValid(cvText);
-  markFieldValid(cvDropZone);
-  updateReadiness();
-  (mode === "paste" ? cvText : cvDropZone).focus();
+  const outgoing = mode === "paste" ? cvDropZone : cvText;
+  const incoming = mode === "paste" ? cvText : cvDropZone;
+  const reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  const swap = () => {
+    outgoing.removeAttribute("data-pane-anim");
+    cvText.hidden = mode !== "paste";
+    if (cvTextCaption) cvTextCaption.hidden = mode !== "paste";
+    cvDropZone.hidden = mode === "paste";
+    if (mode === "paste") cvText.value = pastedResume;
+    incoming.setAttribute("data-pane-anim", "expand");
+    markFieldValid(cvText);
+    markFieldValid(cvDropZone);
+    updateReadiness();
+    incoming.focus();
+  };
+
+  if (reduceMotion || outgoing.hidden) {
+    swap();
+  } else {
+    outgoing.setAttribute("data-pane-anim", "collapse");
+    setTimeout(swap, 140);
+  }
 }
 
 sourceUpload.addEventListener("click", () => switchSource("upload"));

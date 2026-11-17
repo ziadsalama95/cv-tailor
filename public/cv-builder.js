@@ -359,6 +359,7 @@ export function initCvBuilder({ renderResume, onFinish, onDownloadPdf, onTailor,
 
   let state = loadState();
   let activeTab = "basics";
+  let tabAnimToken = 0;
 
   function loadState() {
     try {
@@ -414,20 +415,46 @@ export function initCvBuilder({ renderResume, onFinish, onDownloadPdf, onTailor,
     });
   }
 
-  function setActiveTab(tab) {
+  function setActiveTab(tab, { immediate = false } = {}) {
     if (!TAB_ORDER.includes(tab)) return;
+    const prevTab = activeTab;
     activeTab = tab;
     viewBuilder.querySelectorAll("[data-builder-tab]").forEach((btn) => {
       const active = btn.dataset.builderTab === tab;
       btn.classList.toggle("is-active", active);
       btn.setAttribute("aria-selected", String(active));
     });
-    viewBuilder.querySelectorAll("[data-builder-pane]").forEach((pane) => {
-      pane.hidden = pane.dataset.builderPane !== tab;
-    });
     const idx = TAB_ORDER.indexOf(tab);
     if (prevTabBtn) prevTabBtn.hidden = idx === 0;
     if (nextTabBtn) nextTabBtn.hidden = idx === TAB_ORDER.length - 1;
+
+    const token = ++tabAnimToken;
+    const panes = [...viewBuilder.querySelectorAll("[data-builder-pane]")];
+    const nextPane = panes.find((p) => p.dataset.builderPane === tab);
+    const oldPane = panes.find((p) => !p.hidden && p.dataset.builderPane !== tab);
+    const reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    if (immediate || reduceMotion || !oldPane || prevTab === tab) {
+      panes.forEach((pane) => {
+        pane.removeAttribute("data-pane-anim");
+        pane.hidden = pane.dataset.builderPane !== tab;
+      });
+      autoResizeTextareas();
+      return;
+    }
+
+    oldPane.setAttribute("data-pane-anim", "collapse");
+    setTimeout(() => {
+      if (token !== tabAnimToken) return;
+      panes.forEach((pane) => {
+        pane.removeAttribute("data-pane-anim");
+        pane.hidden = pane.dataset.builderPane !== tab;
+      });
+      if (nextPane) {
+        nextPane.setAttribute("data-pane-anim", "expand");
+        autoResizeTextareas();
+      }
+    }, 150);
   }
 
   function cardActionsHtml(listName, index, length, allowRemove = true) {
@@ -723,7 +750,7 @@ export function initCvBuilder({ renderResume, onFinish, onDownloadPdf, onTailor,
     syncLayoutButtons();
     renderAllLists();
     renderPreview();
-    setActiveTab("basics");
+    setActiveTab("basics", { immediate: true });
     showToast("CV Builder cleared.");
   });
 
@@ -731,7 +758,7 @@ export function initCvBuilder({ renderResume, onFinish, onDownloadPdf, onTailor,
     const data = buildCvDataFromState(state);
     const nameInput = document.getElementById("bName");
     if (!data.name) {
-      setActiveTab("basics");
+      setActiveTab("basics", { immediate: true });
       if (nameInput) {
         nameInput.setAttribute("aria-invalid", "true");
         nameInput.classList.add("is-invalid");
@@ -777,7 +804,7 @@ export function initCvBuilder({ renderResume, onFinish, onDownloadPdf, onTailor,
   syncScalarsToDom();
   syncLayoutButtons();
   renderAllLists();
-  setActiveTab("basics");
+  setActiveTab("basics", { immediate: true });
   renderPreview();
 
   return {
@@ -794,7 +821,7 @@ export function initCvBuilder({ renderResume, onFinish, onDownloadPdf, onTailor,
       syncScalarsToDom();
       syncLayoutButtons();
       renderAllLists();
-      setActiveTab("basics");
+      setActiveTab("basics", { immediate: true });
       renderPreview();
       requestAnimationFrame(fitPreview);
     },

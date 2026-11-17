@@ -295,6 +295,72 @@ html[data-theme="dark"] .topbar { background: rgba(15, 23, 42, 0.94) !important;
 #tailorBtn.is-incomplete:hover { opacity: 0.85; }
 .builder-tab { padding: 7px 11px; font-size: 12.5px; white-space: nowrap; }
 
+/* Smooth view, tab-pane, card, and popover animations */
+@keyframes viewEnter {
+  from { opacity: 0; transform: translateY(14px) scale(0.992); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes paneCollapseUp {
+  from { opacity: 1; transform: translateY(0) scaleY(1); }
+  to { opacity: 0; transform: translateY(-10px) scaleY(0.94); }
+}
+@keyframes paneExpandDown {
+  from { opacity: 0; transform: translateY(-10px) scaleY(0.94); }
+  to { opacity: 1; transform: translateY(0) scaleY(1); }
+}
+@keyframes popoverIn {
+  from { opacity: 0; transform: translateY(-6px) scale(0.96); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes cardIn {
+  from { opacity: 0; transform: translateY(8px) scale(0.985); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+.view-page[data-transition="enter"] {
+  animation: viewEnter 0.28s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.builder-pane, #cvDropZone, #cvText {
+  transform-origin: top center;
+}
+[data-pane-anim="collapse"] {
+  animation: paneCollapseUp 0.16s cubic-bezier(0.4, 0, 1, 1) both;
+  pointer-events: none;
+}
+[data-pane-anim="expand"] {
+  animation: paneExpandDown 0.24s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.builder-card {
+  animation: cardIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.layout-popover:not([hidden]),
+.icon-popover:not([hidden]),
+.link-popover:not([hidden]),
+.placeholder-popover:not([hidden]),
+.confirm-modal:not([hidden]) .confirm-modal__panel {
+  transform-origin: top center;
+  animation: popoverIn 0.18s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.builder-tab, .source-switch button, .builder-layout-pills button, .tool-btn {
+  transition: background-color 0.16s ease, color 0.16s ease, border-color 0.16s ease, transform 0.12s ease, box-shadow 0.16s ease;
+}
+.builder-tab:active, .source-switch button:active, .tool-btn:active {
+  transform: scale(0.97);
+}
+@media (prefers-reduced-motion: reduce) {
+  .view-page[data-transition="enter"],
+  [data-pane-anim="collapse"],
+  [data-pane-anim="expand"],
+  .builder-card,
+  .layout-popover:not([hidden]),
+  .icon-popover:not([hidden]),
+  .link-popover:not([hidden]),
+  .placeholder-popover:not([hidden]),
+  .confirm-modal:not([hidden]) .confirm-modal__panel,
+  .workspace-error {
+    animation: none !important;
+  }
+}
+
 @media (max-width: 960px) {
   .builder-studio { grid-template-columns: 1fr; }
   .builder-preview { position: static; }
