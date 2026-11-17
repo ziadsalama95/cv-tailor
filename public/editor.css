@@ -109,20 +109,28 @@ html #liveResumePaper { position: absolute; top: 0; left: 0; width: 210mm !impor
 html[data-theme="dark"] .link-popover__btn--apply { background: #0057b8; }
 #linkPopoverError { color: var(--error-text); font-size: 12px; margin: 8px 0; }
 html .resume-paper::selection, html .resume-paper *::selection { background: #b8d5ff; color: #000; text-shadow: none; }
-html .resume-paper { --cv-ink: #000; --cv-ink-soft: #000; --cv-ink-muted: #000; --cv-accent: #000; --cv-hairline: #000; color: #000; background: #fff; font-family: 'PT Sans', sans-serif; font-size: 10.5pt; line-height: 1.4; padding: 13.4mm 14.8mm; }
-html .resume-paper :is(.cv-name,.cv-title,.cv-contact,.cv-contact-item,.cv-link,.cv-section-title,.cv-entry-title,.cv-entry-role,.cv-entry-company,.cv-entry-dates,.cv-entry-sub,.cv-summary,.cv-skills-row) { color: #000; }
-html .resume-paper .cv-section-title { border-color: #000; font-size: 11pt; margin-top: 16px; padding-bottom: 5px; }
+html .resume-paper { --cv-ink: #111827; --cv-ink-soft: #1f2937; --cv-ink-muted: #4b5563; --cv-accent: #111827; --cv-hairline: #cbd5e1; color: var(--cv-ink-soft); background: #fff; font-family: 'PT Sans', sans-serif; font-size: 9.75pt; line-height: 1.38; padding: 13mm 14.5mm; }
+html .resume-paper :is(.cv-name,.cv-section-title,.cv-entry-role) { color: var(--cv-ink); }
+html .resume-paper :is(.cv-title,.cv-contact,.cv-contact-item,.cv-link) { color: #374151; }
+html .resume-paper :is(.cv-entry-company,.cv-entry-dates,.cv-entry-sub) { color: var(--cv-ink-muted); }
+html .resume-paper :is(.cv-summary,.cv-bullets li,.cv-skill-row) { color: var(--cv-ink-soft); font-size: 9.75pt; line-height: 1.38; }
+html .resume-paper .cv-section-title { border-color: var(--cv-hairline); font-family: 'PT Serif', Georgia, serif; font-size: 10.5pt; letter-spacing: .07em; margin-top: 14px; margin-bottom: 8px; padding-bottom: 4px; }
 html .resume-paper .cv-section-title::after { display: none; }
-html .resume-paper :is(.cv-contact,.cv-entry-dates,.cv-entry-sub) { font-size: 10.5pt; }
-html .resume-paper .cv-link { text-decoration: underline; }
-html .resume-paper .cv-header { text-align: center; border-bottom: 1px solid #000; padding-bottom: 14px; margin-bottom: 20px; }
-html .resume-paper .cv-name { font-family: 'PT Serif', Georgia, serif; font-size: 23pt; font-weight: 700; line-height: 1.2; }
-html .resume-paper .cv-title { font-size: 11pt; font-weight: 700; letter-spacing: .06em; margin-top: 6px; text-transform: uppercase; }
-html .resume-paper .cv-contact { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 10px; font-family: inherit; }
-html .resume-paper :is(.cv-summary,.cv-bullets li,.cv-skill-row,.cv-entry-company) { font-size: 10.5pt; line-height: 1.4; }
-html .resume-paper .cv-entry-role { font-size: 11pt; }
-html .resume-paper .cv-section { margin-top: 18px; }
-html .resume-paper .cv-section-title { font-family: 'PT Serif', Georgia, serif; margin-bottom: 10px; }
+html .resume-paper .cv-contact { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 10px; margin-top: 7px; font-family: inherit; font-size: 9pt; }
+html .resume-paper .cv-contact-item { display: inline-flex; align-items: center; }
+html .resume-paper .cv-contact-item::after { content: "•"; margin-left: 10px; color: #9ca3af; }
+html .resume-paper .cv-contact-item:last-child::after { content: ""; margin-left: 0; }
+html .resume-paper :is(.cv-entry-dates,.cv-entry-sub) { font-size: 9pt; }
+html .resume-paper .cv-entry-company { font-size: 9.5pt; font-style: italic; font-weight: 400; }
+html .resume-paper .cv-link { text-decoration: underline; text-underline-offset: 2px; }
+html .resume-paper .cv-header { text-align: center; border-bottom: 1.25px solid var(--cv-ink); padding-bottom: 11px; margin-bottom: 16px; }
+html .resume-paper .cv-name { font-family: 'PT Serif', Georgia, serif; font-size: 22pt; font-weight: 700; line-height: 1.18; }
+html .resume-paper .cv-title { font-size: 9.5pt; font-weight: 700; letter-spacing: .08em; margin-top: 4px; text-transform: uppercase; }
+html .resume-paper .cv-entry-role { font-size: 10.5pt; }
+html .resume-paper .cv-section { margin-top: 15px; }
+html .resume-paper .cv-entry { margin-bottom: 11px; }
+html .resume-paper .cv-bullets { margin-top: 4px; }
+html .resume-paper .cv-bullets li { margin-bottom: 3.5px; }
 @media (max-width: 700px) { .workbench-actions { flex-wrap: wrap; } .link-popover__input { font-size: 16px; } }
 @media (max-width: 700px) {
   html .resume-paper { padding: 28px 22px; }

@@ -1783,7 +1783,17 @@ function resolveLayoutRecommendation(data) {
 function renderLayoutOptions() {
   const listEl = el("layoutPopoverList");
   if (!listEl || !window.CvLayouts) return;
-  const recommended = layoutRecommendation?.key || resolveLayoutRecommendation(parsedCvData)?.key;
+  const rec = layoutRecommendation || resolveLayoutRecommendation(parsedCvData);
+  const recommended = rec?.key;
+  const whyEl = el("layoutPopoverWhy");
+  if (whyEl) {
+    if (rec?.reason) {
+      whyEl.textContent = rec.reason;
+      whyEl.hidden = false;
+    } else {
+      whyEl.hidden = true;
+    }
+  }
   listEl.innerHTML = window.CvLayouts.list().sort((a, b) => Number(b.key === recommended) - Number(a.key === recommended)).map((layout) => {
     const isActive = layout.key === activeLayout;
     const isRecommended = layout.key === recommended;
@@ -2109,7 +2119,9 @@ function buildContactHtml(data, clickable = true) {
   const phoneVal = c.phone && String(c.phone).trim();
   push(!phoneVal ? placeholder("YOUR PHONE NUMBER") : isPlaceholderText(phoneVal) ? escapeHtml(phoneVal) : formatContactLink(phoneVal, "phone", clickable), "phone");
   const locationVal = c.location && String(c.location).trim();
-  push(!locationVal || isPlaceholderText(locationVal) ? fieldOrPlaceholder(c.location, "YOUR CITY, COUNTRY") : formatContactLink(locationVal, "location", clickable), "location");
+  if (locationVal && !isPlaceholderText(locationVal)) {
+    push(formatContactLink(locationVal, "location", clickable), "location");
+  }
   if (c.linkedin) {
     const v = String(c.linkedin).trim();
     push(isPlaceholderText(v) ? escapeHtml(v) : formatContactLink(v, "linkedin", clickable), "");
@@ -2179,8 +2191,8 @@ downloadPdfBtn.addEventListener("click", async () => {
     const content = buildPdfContentFromDom(cvDocumentPaper, theme);
     const docDefinition = {
       pageSize: "A4",
-      pageMargins: [42, 38, 42, 38],
-      defaultStyle: { font: theme.bodyFont, fontSize: 10.5, lineHeight: 1.25, color: "#000000" },
+      pageMargins: [40, 36, 40, 36],
+      defaultStyle: { font: theme.bodyFont, fontSize: 9.75, lineHeight: 1.32, color: INK_BODY },
       content: normalizePdfStyle(content, theme),
     };
 
@@ -2248,41 +2260,39 @@ downloadPdfBtn.addEventListener("click", async () => {
   }
 });
 
-const INK = "#111214";
-const INK_SOFT = "#33353b";
-const INK_MUTE = "#46484f";
-const INK_FAINT = "#6b6d74";
-const RULE_LIGHT = "#b7b7b0";
+const INK = "#111827";
+const INK_BODY = "#1f2937";
+const INK_SOFT = "#374151";
+const INK_MUTE = "#4b5563";
+const INK_FAINT = "#6b7280";
+const RULE_LIGHT = "#cbd5e1";
 
 const PDF_THEMES = {
   executive: {
     bodyFont: "PTSans",
     headingFont: "PTSerif",
-    accent: "#000000",
-    ink: "#17191d",
+    accent: "#111827",
+    ink: "#111827",
     headerAlign: "center",
-    nameSize: 23,
+    nameSize: 22,
     titleUppercase: true,
-    titleColor: "#17191d",
-    sectionTitleColor: "#17191d",
-    sectionRuleColor: "#17191d",
-    sectionHairlineColor: "#d8dbe0",
-    headerRuleColor: "#17191d",
-    headerRuleWeight: 1.5,
-    companyColor: "#46484f",
+    titleColor: "#374151",
+    sectionTitleColor: "#111827",
+    sectionRuleColor: "#111827",
+    sectionHairlineColor: "#cbd5e1",
+    headerRuleColor: "#111827",
+    headerRuleWeight: 1.25,
+    companyColor: "#4b5563",
     ruleWeight: 0.75,
     sectionTitleAlign: "left",
   },
 };
 
-function normalizePdfStyle(value, theme) {
-  if (Array.isArray(value)) return value.map((item) => normalizePdfStyle(item, theme));
+function normalizePdfStyle(value) {
+  if (Array.isArray(value)) return value.map((item) => normalizePdfStyle(item));
   if (!value || typeof value !== "object") return value;
-  const result = Object.fromEntries(Object.entries(value).map(([key, item]) => [key, normalizePdfStyle(item, theme)]));
-  if (result.color) result.color = "#000000";
-  if (result.lineColor) result.lineColor = "#000000";
-  if (result.fontSize && result.fontSize < 10.5) result.fontSize = 10.5;
-  if (result.x2 > 511) result.x2 = 511;
+  const result = Object.fromEntries(Object.entries(value).map(([key, item]) => [key, normalizePdfStyle(item)]));
+  if (result.x2 > 515) result.x2 = 515;
   return result;
 }
 
@@ -2363,11 +2373,11 @@ function buildPdfHeader(headerEl, theme) {
       font: theme.bodyFont,
       bold: !theme.titleItalic,
       italics: !!theme.titleItalic,
-      fontSize: 10,
+      fontSize: 9.5,
       color: theme.titleColor,
       alignment: align,
-      margin: [0, 0, 0, 6],
-      characterSpacing: theme.titleUppercase ? 0.4 : 0,
+      margin: [0, 0, 0, 5],
+      characterSpacing: theme.titleUppercase ? 0.6 : 0,
     });
   }
   if (contact) {
@@ -2375,17 +2385,17 @@ function buildPdfHeader(headerEl, theme) {
     const runs = [];
     items.forEach((item, idx) => {
       runs.push(...inlineRuns(item, { font: theme.bodyFont, fontSize: 9, color: INK_SOFT, linkColor: theme.accent }));
-      if (idx < items.length - 1) runs.push({ text: "   •   ", color: RULE_LIGHT, fontSize: 9, font: theme.bodyFont });
+      if (idx < items.length - 1) runs.push({ text: "   •   ", color: INK_FAINT, fontSize: 9, font: theme.bodyFont });
     });
     stack.push({ text: runs, alignment: align });
   }
 
   const ruleWidth = 515;
   // Single full-width rule beneath the header.
-  const ruleBlocks = [ruleLine(ruleWidth, theme.headerRuleColor || theme.accent, theme.headerRuleWeight || 1.5)];
+  const ruleBlocks = [ruleLine(ruleWidth, theme.headerRuleColor || theme.accent, theme.headerRuleWeight || 1.25)];
 
   return {
-    stack: [{ stack, margin: [0, 0, 0, 10] }, { stack: ruleBlocks, margin: [0, 0, 0, 12] }],
+    stack: [{ stack, margin: [0, 0, 0, 8] }, { stack: ruleBlocks, margin: [0, 0, 0, 10] }],
     unbreakable: true,
   };
 }
@@ -2544,9 +2554,9 @@ function buildPdfContentFromDom(root, theme) {
         text: titleEl.textContent.toUpperCase(),
         font: theme.headingFont,
         bold: true,
-        fontSize: 11,
+        fontSize: 10.5,
         color: theme.sectionTitleColor,
-        characterSpacing: 0.4,
+        characterSpacing: 0.5,
         alignment: theme.sectionTitleAlign || "left",
         margin: [0, 0, 0, 3],
       };
@@ -3399,5 +3409,12 @@ window.addEventListener("beforeunload", (event) => {
   if (isTailoring || editStatusDot.classList.contains("is-edited")) {
     event.preventDefault();
     event.returnValue = "";
+  }
+});
+
+document.addEventListener("keydown", (event) => {
+  if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "s" && viewWorkbench && !viewWorkbench.hidden) {
+    event.preventDefault();
+    downloadPdfBtn?.click();
   }
 });
