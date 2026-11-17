@@ -1658,11 +1658,11 @@ function openIconMenu(anchorRect, item) {
   const hidden = iconsHidden();
   if (addAllBtn) {
     addAllBtn.classList.toggle("is-active", !hidden);
-    addAllBtn.textContent = !hidden ? "✓ Show link icons" : "Show link icons";
+    addAllBtn.textContent = !hidden ? "✓ Show icons" : "Show icons";
   }
   if (hideAllBtn) {
     hideAllBtn.classList.toggle("is-active", hidden);
-    hideAllBtn.textContent = hidden ? "✓ Hide link icons" : "Hide link icons";
+    hideAllBtn.textContent = hidden ? "✓ Hide icons" : "Hide icons";
   }
   iconPopover.hidden = false;
   if (btnToggleIcons && !item) btnToggleIcons.setAttribute("aria-expanded", "true");
@@ -3488,8 +3488,8 @@ updateReadiness();
 
 function setReviewContext(example) {
   isExample = example;
-  el("reviewEyebrow").textContent = example ? "EXAMPLE" : "EDITOR";
-  el("reviewHeading").textContent = example ? "Example resume" : "Review and refine";
+  el("reviewEyebrow").hidden = true;
+  el("reviewHeading").textContent = example ? "Example resume" : "Edit & download";
   const contextText = example ? "" : [jobTitle.value.trim(), jobCompany.value.trim()].filter(Boolean).join(" at ");
   const contextEl = el("reviewContext");
   contextEl.textContent = contextText;
