@@ -840,7 +840,7 @@ function showFileInfo(name, statusText) {
   updateReadiness();
 }
 
-function removeFile() {
+function removeFile({ keepVisibility = false } = {}) {
   cvFile.value = "";
   cvText.value = "";
   cvImages = [];
@@ -851,7 +851,7 @@ function removeFile() {
   uploadedFileMime = null;
   resetExtractedLinks();
   cvFileInfo.hidden = true;
-  cvDropZone.hidden = false;
+  if (!keepVisibility) cvDropZone.hidden = false;
   updateReadiness();
 }
 cvFileRemove.addEventListener("click", (e) => {
@@ -3724,7 +3724,7 @@ async function switchSource(mode) {
     if (!ok) return;
   }
   if (mode === "upload") pastedResume = cvText.value;
-  removeFile();
+  removeFile({ keepVisibility: true });
   sourceMode = mode;
   sourceUpload.setAttribute("aria-pressed", String(mode === "upload"));
   sourcePaste.setAttribute("aria-pressed", String(mode === "paste"));
