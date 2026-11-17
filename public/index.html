@@ -147,7 +147,7 @@
 
       <section id="tailorWorkspace" aria-labelledby="workspaceHeading" tabindex="-1">
       <div class="workspace-heading">
-        <div><p class="eyebrow">WORKSPACE</p><h2 id="workspaceHeading">Prepare your tailored resume</h2><p>Add your current resume and the role you are applying for.</p></div>
+        <div><p class="eyebrow">WORKSPACE</p><h2 id="workspaceHeading">Prepare your tailored resume</h2></div>
       </div>
       <div id="workspaceError" class="workspace-error" role="alert" hidden><span id="workspaceErrorText"></span><button type="button" id="dismissWorkspaceError" aria-label="Dismiss error">×</button></div>
       <div class="panels">
@@ -158,7 +158,6 @@
             <div class="step-head__badge">1</div>
             <h3 class="step-head__title">Your resume</h3>
           </div>
-          <p class="panel-intro">Start with your experience, just as it is.</p>
           <div class="source-switch" role="group" aria-label="Resume input method">
             <button type="button" id="sourceUpload" aria-pressed="true">Upload a file</button>
             <button type="button" id="sourcePaste" aria-pressed="false">Paste text</button>
@@ -198,7 +197,6 @@
           <!-- Holds extracted resume text (from PDF/DOCX) or direct pasted text when in Paste mode. -->
           <textarea id="cvText" hidden aria-label="Resume text" placeholder="Paste your resume here, including your contact details, experience, education, and skills…"></textarea>
           <p class="field-error" id="resumeError" hidden>Add your resume to get started.</p>
-          <div class="upload-note"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg><p><strong>Your facts stay intact.</strong><br>We tailor the framing to the role, and you review every line before exporting.</p></div>
         </div>
 
         <!-- Panel 2: Target Job -->
@@ -207,14 +205,13 @@
             <div class="step-head__badge">2</div>
             <h3 class="step-head__title">The opportunity</h3>
           </div>
-          <p class="panel-intro">Tell us what you're applying for.</p>
 
           <div class="row">
             <div class="form-field"><label for="jobTitle">Job title <span class="required-label">Required</span></label><input type="text" id="jobTitle" placeholder="e.g. Product Designer" required aria-describedby="jobTitleError"><p id="jobTitleError" class="field-error" hidden>Enter the role you're applying for.</p></div>
             <div class="form-field"><label for="jobCompany">Company <span>Optional</span></label><input type="text" id="jobCompany" placeholder="e.g. Acme" autocomplete="organization"></div>
             <div class="form-field"><label for="jobLocation">Location <span>Optional</span></label><input type="text" id="jobLocation" placeholder="e.g. Remote"></div>
           </div>
-          <div class="form-field"><label for="jobDescription">Job description <span class="required-label">Required</span></label><textarea id="jobDescription" placeholder="Paste the responsibilities, requirements, and skills from the job listing…" required aria-describedby="jobDescriptionHint jobDescriptionError"></textarea><div class="field-caption"><span id="jobDescriptionHint">The full description gives your draft more context.</span><span id="descriptionCount">0 words</span></div><p id="jobDescriptionError" class="field-error" hidden>Add the job description so we can tailor your resume.</p></div>
+          <div class="form-field"><label for="jobDescription">Job description <span class="required-label">Required</span></label><textarea id="jobDescription" placeholder="Paste the responsibilities, requirements, and skills from the job listing…" required aria-describedby="jobDescriptionError"></textarea><div class="field-caption"><span id="descriptionCount">0 words</span></div><p id="jobDescriptionError" class="field-error" hidden>Add the job description so we can tailor your resume.</p></div>
         </div>
 
       </div>
@@ -245,7 +242,6 @@
         <div>
           <p class="eyebrow">CV BUILDER</p>
           <h2 id="builderHeading" tabindex="-1">Build your resume</h2>
-          <p class="builder-sub">Fill in your details below. Your resume preview updates live as you type.</p>
         </div>
         <div class="builder-header__actions">
           <button type="button" class="tool-btn" id="builderBackBtn">Back</button>
@@ -409,16 +405,16 @@
           <p class="eyebrow">IN PROGRESS</p>
           <h3 id="progressRole"></h3>
           <ol class="live-steps">
-            <li data-progress-phase="sending"><span>1</span><div><strong>Open your resume</strong><p>Your experience is the starting point.</p></div></li>
-            <li data-progress-phase="accepted"><span>2</span><div><strong>Tailor your story</strong><p>Connect your experience to this opportunity.</p>
+            <li data-progress-phase="sending"><span>1</span><div><strong>Open your resume</strong></div></li>
+            <li data-progress-phase="accepted"><span>2</span><div><strong>Tailor your story</strong>
               <div class="scan-progress" id="scanProgress" hidden>
                 <div class="scan-progress__track" id="scanProgressBar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Reading your resume">
                   <div class="scan-progress__fill" id="scanProgressFill"></div>
                 </div>
               </div>
             </div></li>
-            <li data-progress-phase="draft"><span>3</span><div><strong>Write your draft</strong><p>Put your strongest experience forward.</p></div></li>
-            <li data-progress-phase="prepare"><span>4</span><div><strong>Prepare for your review</strong><p>Ready for your finishing touches.</p></div></li>
+            <li data-progress-phase="draft"><span>3</span><div><strong>Write your draft</strong></div></li>
+            <li data-progress-phase="prepare"><span>4</span><div><strong>Prepare for your review</strong></div></li>
           </ol>
           <div class="live-timing"><span>Elapsed <strong id="progressElapsed">0:00</strong></span></div>
         </div>
@@ -428,7 +424,6 @@
             <div class="source-scan__desk">
               <div class="source-scan__sheet"><div id="sourceScanPage"></div><div class="source-scan__beam" aria-hidden="true"></div><i class="scan-corner scan-corner--tl"></i><i class="scan-corner scan-corner--br"></i></div>
             </div>
-            <p class="source-scan__caption">A closer look at your experience.</p>
           </div>
           <div id="liveDocument" class="live-document" hidden>
             <div class="live-document__heading">Your next resume, taking shape.</div>
