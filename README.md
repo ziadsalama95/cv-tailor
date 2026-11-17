@@ -9,13 +9,13 @@ CV Tailor accepts an existing resume or a newly created CV, adapts its language 
 ## Screenshots
 
 <p align="center">
-  <img src="public/assets/cv-tailor-homepage.png" width="49%" alt="CV Tailor homepage and product preview" />
+  <img src="public/assets/cv-tailor-homepage.png" width="49%" alt="CV Tailor homepage" />
   <img src="public/assets/cv-tailor-workspace.png" width="49%" alt="Resume editing workspace with source and target-job inputs" />
 </p>
 
-<p align="center"><sub>Product homepage</sub> &nbsp; · &nbsp; <sub>Resume tailoring workspace</sub></p>
+<p align="center"><sub>Homepage</sub> &nbsp; · &nbsp; <sub>Resume tailoring workspace</sub></p>
 
-## Product capabilities
+## Features
 
 - **Flexible source material:** upload PDF or DOCX, paste resume text, or build a CV from scratch. Job details can be entered directly, with support for a job-posting screenshot.
 - **Streaming generation:** tailored content appears progressively in a live resume preview while the server streams the model response over Server-Sent Events.
