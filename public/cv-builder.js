@@ -332,9 +332,11 @@ export function builderCvToPlainText(data = {}) {
   return lines.join("\n").trim();
 }
 
-export function initCvBuilder({ renderResume, onFinish, onDownloadPdf, onTailor, onBack, confirmDialog, showToast }) {
+export function initCvBuilder({ renderResume, onFinish, onDownloadPdf, onTailor, onBack, confirmDialog, showToast, animateHeightChange }) {
   const viewBuilder = document.getElementById("viewBuilder");
   if (!viewBuilder) return null;
+
+  const builderForm = viewBuilder.querySelector(".builder-form");
 
   const previewStage = document.getElementById("builderPreviewStage");
   const previewSheet = document.getElementById("builderPreviewSheet");
@@ -446,14 +448,18 @@ export function initCvBuilder({ renderResume, onFinish, onDownloadPdf, onTailor,
     oldPane.setAttribute("data-pane-anim", "collapse");
     setTimeout(() => {
       if (token !== tabAnimToken) return;
-      panes.forEach((pane) => {
-        pane.removeAttribute("data-pane-anim");
-        pane.hidden = pane.dataset.builderPane !== tab;
-      });
-      if (nextPane) {
-        nextPane.setAttribute("data-pane-anim", "expand");
-        autoResizeTextareas();
-      }
+      const runSwap = () => {
+        panes.forEach((pane) => {
+          pane.removeAttribute("data-pane-anim");
+          pane.hidden = pane.dataset.builderPane !== tab;
+        });
+        if (nextPane) {
+          nextPane.setAttribute("data-pane-anim", "expand");
+          autoResizeTextareas();
+        }
+      };
+      if (animateHeightChange && builderForm) animateHeightChange(builderForm, runSwap);
+      else runSwap();
     }, 150);
   }
 
@@ -811,7 +817,14 @@ export function initCvBuilder({ renderResume, onFinish, onDownloadPdf, onTailor,
     open() {
       syncScalarsToDom();
       syncLayoutButtons();
-      renderAllLists();
+      if (animateHeightChange && builderForm) {
+        animateHeightChange(builderForm, () => {
+          renderAllLists();
+          autoResizeTextareas();
+        });
+      } else {
+        renderAllLists();
+      }
       renderPreview();
       requestAnimationFrame(fitPreview);
     },

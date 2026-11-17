@@ -835,13 +835,42 @@ async function processPdf(file) {
 
 // EFFICIENT SINGLE-PAGE CAROUSEL
 
+function animateHeightChange(container, mutate) {
+  if (!container) { mutate(); return; }
+  const reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (reduceMotion) { mutate(); return; }
+  clearTimeout(container._heightAnimTimer);
+  const startH = container.getBoundingClientRect().height;
+  container.style.height = "";
+  container.style.overflow = "";
+  container.style.transition = "";
+  mutate();
+  const endH = container.getBoundingClientRect().height;
+  if (Math.abs(endH - startH) < 2) return;
+  container.style.height = `${startH}px`;
+  container.style.overflow = "hidden";
+  void container.offsetHeight;
+  container.style.transition = "height 0.28s cubic-bezier(0.16, 1, 0.3, 1)";
+  container.style.height = `${endH}px`;
+  container._heightAnimTimer = setTimeout(() => {
+    container.style.height = "";
+    container.style.overflow = "";
+    container.style.transition = "";
+  }, 300);
+}
+
 function showFileInfo(name, statusText) {
-  cvFileName.textContent = name;
-  cvFileStatus.textContent = statusText;
-  cvFileInfo.hidden = false;
-  cvDropZone.hidden = true;
-  cvText.hidden = true;
-  updateReadiness();
+  const panel = cvFileInfo?.closest(".panel");
+  const apply = () => {
+    cvFileName.textContent = name;
+    cvFileStatus.textContent = statusText;
+    cvFileInfo.hidden = false;
+    cvDropZone.hidden = true;
+    cvText.hidden = true;
+    updateReadiness();
+  };
+  if (cvFileInfo.hidden && panel) animateHeightChange(panel, apply);
+  else apply();
 }
 
 function removeFile({ keepVisibility = false } = {}) {
@@ -3740,16 +3769,19 @@ async function switchSource(mode) {
 
   const swap = () => {
     if (token !== sourceAnimToken) return;
-    cvDropZone.removeAttribute("data-pane-anim");
-    cvText.removeAttribute("data-pane-anim");
-    cvText.hidden = mode !== "paste";
-    if (cvTextCaption) cvTextCaption.hidden = mode !== "paste";
-    cvDropZone.hidden = mode === "paste";
-    if (mode === "paste") cvText.value = pastedResume;
-    incoming.setAttribute("data-pane-anim", "expand");
-    markFieldValid(cvText);
-    markFieldValid(cvDropZone);
-    updateReadiness();
+    const panel = cvDropZone?.closest(".panel");
+    animateHeightChange(panel, () => {
+      cvDropZone.removeAttribute("data-pane-anim");
+      cvText.removeAttribute("data-pane-anim");
+      cvText.hidden = mode !== "paste";
+      if (cvTextCaption) cvTextCaption.hidden = mode !== "paste";
+      cvDropZone.hidden = mode === "paste";
+      if (mode === "paste") cvText.value = pastedResume;
+      incoming.setAttribute("data-pane-anim", "expand");
+      markFieldValid(cvText);
+      markFieldValid(cvDropZone);
+      updateReadiness();
+    });
   };
 
   if (reduceMotion || outgoing.hidden) {
@@ -3822,6 +3854,7 @@ const cvBuilder = initCvBuilder({
   renderResume: buildResumeInnerHtml,
   confirmDialog,
   showToast,
+  animateHeightChange,
   onBack: () => showView("viewInput"),
   onFinish: (data, plainText) => {
     loadBuilderIntoWorkbench(data, plainText);
