@@ -17,7 +17,7 @@ CV Tailor accepts an existing resume or a newly created CV, adapts its language 
 
 ## Features
 
-- **Flexible source material:** upload PDF or DOCX, paste resume text, or build a CV from scratch. Job details can be entered directly, with support for a job-posting screenshot.
+- **Flexible source material:** upload a PDF or DOCX, paste resume text, or build a CV from scratch. Enter the target role and paste its description as text.
 - **Streaming generation:** tailored content appears progressively in a live resume preview while the server streams the model response over Server-Sent Events.
 - **Fact-aware rewriting:** prompts preserve source facts such as employers, dates, qualifications, and measurable results; unsupported details are identified with explicit placeholders.
 - **Adjustable tailoring:** choose Light touch, Balanced, or Full rewrite, then select from Career, Skills, Portfolio, and Academic layouts.
@@ -30,7 +30,7 @@ CV Tailor accepts an existing resume or a newly created CV, adapts its language 
 ```mermaid
 flowchart LR
     A[Resume, pasted text, or CV builder] --> B[Browser parsing and editing]
-    C[Job description or screenshot] --> D[Validated tailoring request]
+    C[Job title and pasted job description] --> D[Validated tailoring request]
     B --> D
     D --> E[Node.js or Cloudflare Worker]
     E --> F[NVIDIA NIM chat completions]
