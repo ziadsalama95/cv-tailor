@@ -1472,14 +1472,25 @@ if (btnZoomIn) btnZoomIn.addEventListener("click", () => applyZoom(zoomLevel + Z
 if (btnZoomReset) btnZoomReset.addEventListener("click", () => applyZoom(1));
 function fitToView() {
   if (!documentWorkbench || !cvDocumentPaper || viewWorkbench.hidden) return;
-  const availableW = documentWorkbench.clientWidth - (window.innerWidth < 700 ? 32 : 64);
+  const availableW = documentWorkbench.clientWidth - (window.innerWidth < 700 ? 20 : 64);
   if (cvDocumentPaper.offsetWidth > 0) applyZoom(Math.min(1, availableW / cvDocumentPaper.offsetWidth));
 }
+let lastWindowWidth = window.innerWidth;
+window.addEventListener("resize", () => {
+  if (window.innerWidth !== lastWindowWidth) {
+    lastWindowWidth = window.innerWidth;
+    fitToView();
+  }
+});
 if (btnZoomFit) {
   btnZoomFit.addEventListener("click", () => {
     if (!documentWorkbench || !cvDocumentPaper) return;
+    if (window.innerWidth <= 880) {
+      fitToView();
+      return;
+    }
     const naturalH = cvDocumentPaper.offsetHeight;
-    const availableH = documentWorkbench.clientHeight - 64; // breathing room above/below
+    const availableH = documentWorkbench.clientHeight - 64;
     const availableW = documentWorkbench.clientWidth - 32;
     if (naturalH > 0 && availableH > 0) applyZoom(Math.min(availableH / naturalH, availableW / cvDocumentPaper.offsetWidth));
   });

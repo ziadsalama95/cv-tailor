@@ -109,7 +109,7 @@ html #liveResumePaper { position: absolute; top: 0; left: 0; width: 210mm !impor
 html[data-theme="dark"] .link-popover__btn--apply { background: #0057b8; }
 #linkPopoverError { color: var(--error-text); font-size: 12px; margin: 8px 0; }
 html .resume-paper::selection, html .resume-paper *::selection { background: #b8d5ff; color: #000; text-shadow: none; }
-html .resume-paper { --cv-ink: #111827; --cv-ink-soft: #1f2937; --cv-ink-muted: #4b5563; --cv-accent: #111827; --cv-hairline: #cbd5e1; color: var(--cv-ink-soft); background: #fff; font-family: 'PT Sans', sans-serif; font-size: 9.75pt; line-height: 1.38; padding: 13mm 14.5mm; }
+html .resume-paper { --cv-ink: #111827; --cv-ink-soft: #1f2937; --cv-ink-muted: #4b5563; --cv-accent: #111827; --cv-hairline: #cbd5e1; color: var(--cv-ink-soft); background-color: #fff; background-image: repeating-linear-gradient(to bottom, transparent 0, transparent calc(297mm - 1px), #e2e8f0 calc(297mm - 1px), #e2e8f0 297mm); font-family: 'PT Sans', sans-serif; font-size: 9.75pt; line-height: 1.38; padding: 13mm 14.5mm; }
 html .resume-paper :is(.cv-name,.cv-section-title,.cv-entry-role) { color: var(--cv-ink); }
 html .resume-paper :is(.cv-title,.cv-contact,.cv-contact-item,.cv-link) { color: #374151; }
 html .resume-paper :is(.cv-entry-company,.cv-entry-dates,.cv-entry-sub) { color: var(--cv-ink-muted); }
@@ -132,13 +132,5 @@ html .resume-paper .cv-section { margin-top: 15px; }
 html .resume-paper .cv-entry { margin-bottom: 11px; }
 html .resume-paper .cv-bullets { margin-top: 4px; }
 html .resume-paper .cv-bullets li { margin-bottom: 3.5px; }
-@media (max-width: 700px) { .workbench-actions { flex-wrap: wrap; } .link-popover__input { font-size: 16px; } }
-@media (max-width: 700px) {
-  html .resume-paper { padding: 28px 22px; }
-  html .resume-paper .cv-entry-head { flex-direction: column; align-items: flex-start; gap: 4px; }
-  html .resume-paper .cv-entry-dates { text-align: left; }
-  html :is(#builderPreviewPaper, #heroResumePaper, #liveResumePaper, #a4MeasurePaper) .cv-entry-head { flex-direction: row; align-items: baseline; gap: 10px; }
-  html :is(#builderPreviewPaper, #heroResumePaper, #liveResumePaper, #a4MeasurePaper) .cv-entry-dates { text-align: right; }
-  html .resume-paper .cv-name { font-size: 22pt; }
-  .canvas-statusbar__status { flex-wrap: wrap; }
-}
+@media (max-width: 700px) { .workbench-actions { flex-wrap: wrap; } .link-popover__input { font-size: 16px; } .canvas-statusbar__status { flex-wrap: wrap; } }
+html #cvDocumentPaper { position: absolute; top: 0; left: 0; width: 210mm; min-height: 297mm; margin: 0; }

@@ -1938,10 +1938,7 @@ html[data-theme="dark"] .footer__credit a { color: #78b4ff; }
   .controls { flex-direction: column; align-items: stretch; }
   .segmented-control { width: 100%; }
   .segmented-control button { flex: 1; text-align: center; }
-  .document-workbench { padding: 10px; height: auto; max-height: none; overflow: visible; }
-  .resume-paper { width: 100%; padding: 20px 16px; min-height: auto; transform: none !important; }
-  .paper-canvas { width: 100% !important; height: auto !important; }
-  .canvas-statusbar__zoom { display: none; }
+  .document-workbench { padding: 16px 10px; height: auto; min-height: 360px; max-height: 72vh; overflow: auto; }
   .how-it-works { grid-template-columns: 1fr; gap: 24px; }
   .how-it-works__step { padding-top: 0; padding-left: 20px; border-left: 2px solid var(--hairline); }
 }
@@ -2007,8 +2004,6 @@ html[data-theme="dark"] .footer__credit a { color: #78b4ff; }
   .workbench-actions .btn--cta { flex: 1 1 100%; justify-content: center; }
   .workbench-actions .tool-btn { flex: 1 1 auto; justify-content: center; }
   .canvas-statusbar { padding: 8px 16px; flex-wrap: wrap; }
-
-  .resume-paper { padding: 18px 14px; }
 }
 
 /* Small phones */
