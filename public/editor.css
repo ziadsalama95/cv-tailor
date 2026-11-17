@@ -13,8 +13,8 @@ body.no-header .desk { perspective: none; }
 .live-steps strong { font-size: 14px; font-weight: 700; }
 .live-steps p { font-size: 12px; line-height: 1.6; margin: 5px 0 0; }
 .live-steps [data-state="current"] { color: var(--ink-dark); }
-.live-steps [data-state="current"] > span { border-color: var(--primary); background: var(--primary-wash); color: var(--primary); box-shadow: 0 0 0 4px var(--primary-wash); }
-.live-steps [data-state="complete"] > span { background: var(--ink-dark); color: var(--panel-bg); }
+.live-steps [data-state="current"] > span { border-color: var(--primary); background: var(--primary-wash); color: var(--primary); box-shadow: 0 0 0 4px var(--primary-wash); transition: background-color .2s, border-color .2s, color .2s; }
+.live-steps [data-state="complete"] > span { background: var(--emerald); border-color: var(--emerald); color: #fff; transition: background-color .2s, border-color .2s; }
 .live-timing { border-top: 1px solid var(--hairline); margin-top: 30px; padding-top: 18px; display: grid; gap: 8px; font-size: 12px; color: var(--ink-muted); }
 .live-timing strong { font-variant-numeric: tabular-nums; color: var(--ink-dark); margin-left: 8px; }
 .live-workspace { grid-template-columns: minmax(260px, .75fr) minmax(0, 1.25fr); overflow: visible; align-items: start; }

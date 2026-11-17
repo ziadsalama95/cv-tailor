@@ -5,6 +5,8 @@
 
   --primary: #0057b8;            /* Confident, editorial blue - the "approved" stamp */
   --primary-hover: #00408f;
+  --primary-btn: #0057b8;
+  --primary-btn-hover: #00408f;
   --primary-rgb: 0, 87, 184;     /* Raw channels of --primary, for one-off alpha values below that don't have a named token (e.g. hover washes, scan-bed accents) - keeps every "primary blue at some opacity" in the app tied to the same color, in both themes. */
   --primary-glow: rgba(0, 87, 184, 0.22);
   --primary-wash: rgba(0, 87, 184, 0.07);
@@ -66,6 +68,8 @@ html[data-theme="dark"] {
 
   --primary: #4c8dff;
   --primary-hover: #79aaff;
+  --primary-btn: #2563eb;
+  --primary-btn-hover: #1d4ed8;
   --primary-rgb: 76, 141, 255;
   --primary-glow: rgba(76, 141, 255, 0.32);
   --primary-wash: rgba(76, 141, 255, 0.14);
@@ -118,6 +122,10 @@ button, a, .cta, .tool-btn, .tool-icon-btn, .zoom-btn, .zoom-level,
 }
 .cta:active { transform: translateY(0) scale(0.98); }
 .tool-btn:active, .tool-icon-btn:active, .topbar__cta:active { transform: scale(0.96); }
+button:focus-visible, a:focus-visible, .drop-zone:focus-visible, .brand:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
 
 .desk { perspective: 1800px; }
 .view-page {
@@ -739,7 +747,7 @@ textarea:focus, input[type="text"]:focus {
   transition: color .15s ease, background .15s ease, box-shadow .15s ease;
 }
 .segmented-control button.active {
-  background: var(--primary);
+  background: var(--primary-btn);
   color: #fff;
   box-shadow: 0 2px 8px var(--primary-glow);
 }
@@ -753,7 +761,7 @@ textarea:focus, input[type="text"]:focus {
   font-weight: 800;
   padding: 14px 30px;
   border-radius: var(--radius-sm);
-  background: var(--primary);
+  background: var(--primary-btn);
   color: #fff;
   border: none;
   cursor: pointer;
@@ -1427,6 +1435,7 @@ html[data-theme="dark"] .job-summary-card__body-viewport::before {
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  min-height: 36px;
   background: var(--bg-subtle);
   border: 1px solid var(--panel-border);
   border-radius: var(--radius-sm);
@@ -1435,17 +1444,17 @@ html[data-theme="dark"] .job-summary-card__body-viewport::before {
   font-weight: 700;
   color: var(--ink-dark);
   cursor: pointer;
-  transition: background .15s, color .15s;
+  transition: background .15s, color .15s, border-color .15s;
 }
-.tool-btn:hover { background: rgba(var(--primary-rgb), 0.08); color: var(--primary); }
+.tool-btn:hover { background: rgba(var(--primary-rgb), 0.08); color: var(--primary); border-color: var(--primary-border); }
 .tool-btn--reset:hover:not(:disabled) { color: var(--ink-dark); background: var(--hairline); }
 
 .tool-icon-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
   background: var(--bg-subtle);
   border: 1px solid var(--panel-border);
   border-radius: var(--radius-sm);
@@ -1471,10 +1480,11 @@ html[data-theme="dark"] .job-summary-card__body-viewport::before {
 .workbench-actions { display: flex; align-items: center; gap: 8px; }
 
 .btn--cta {
-  background: var(--primary);
+  background: var(--primary-btn);
   color: #fff;
   font-weight: 800;
-  padding: 11.5px 24px;
+  padding: 10px 22px;
+  min-height: 36px;
   border-radius: var(--radius-sm);
   border: none;
   cursor: pointer;
@@ -1482,9 +1492,9 @@ html[data-theme="dark"] .job-summary-card__body-viewport::before {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  transition: transform .15s, background .15s;
+  transition: transform .15s, background .15s, box-shadow .15s;
 }
-.btn--cta:hover { background: var(--primary-hover); transform: translateY(-1px); }
+.btn--cta:hover { background: var(--primary-btn-hover); transform: translateY(-1px); }
 .btn--cta:disabled { cursor: progress; opacity: 0.85; transform: none; }
 
 /* Primary download CTA - two-line copy (what it is + why it's good). */
@@ -1495,13 +1505,16 @@ html[data-theme="dark"] .job-summary-card__body-viewport::before {
 
 .document-workbench {
   padding: 32px 20px;
-  background: var(--surface-3);
-  height: min(72vh, 820px);
+  background-color: var(--surface-3);
+  background-image: radial-gradient(var(--surface-2-grid) 1px, transparent 1px);
+  background-size: 18px 18px;
+  height: min(74vh, 840px);
   min-height: 420px;
   display: flex;
   justify-content: center;
   align-items: flex-start;
   overflow: auto;
+  scroll-behavior: smooth;
   -webkit-overflow-scrolling: touch;
 }
 
@@ -1536,6 +1549,22 @@ html[data-theme="dark"] .job-summary-card__body-viewport::before {
   color: var(--ink-muted);
 }
 .canvas-statusbar__status { display: flex; align-items: center; gap: 7px; font-weight: 600; }
+.page-estimate {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 700;
+  background: var(--bg-subtle);
+  color: var(--ink-body);
+  border: 1px solid var(--hairline);
+}
+.page-estimate.is-multi {
+  background: var(--amber-wash);
+  color: var(--amber);
+  border-color: transparent;
+}
 .edit-status-dot {
   width: 7px;
   height: 7px;

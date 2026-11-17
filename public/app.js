@@ -1503,6 +1503,15 @@ function layoutRealPages() {
   paperCanvas.style.width = `${finalW * zoomLevel}px`;
   paperCanvas.style.height = `${finalH * zoomLevel}px`;
 
+  const pageEstimateEl = el("pageEstimate");
+  if (pageEstimateEl && finalW > 0) {
+    // A4 ratio (297 / 210); allow a tiny 12px tolerance for subpixel rounding
+    const singlePageH = finalW * (297 / 210);
+    const pages = Math.max(1, Math.ceil((finalH - 12) / singlePageH));
+    pageEstimateEl.textContent = pages === 1 ? "1 page" : `${pages} pages`;
+    pageEstimateEl.classList.toggle("is-multi", pages > 1);
+  }
+
   isLayingOutPages = false;
 }
 
