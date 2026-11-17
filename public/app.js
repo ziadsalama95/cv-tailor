@@ -600,7 +600,7 @@ async function handleCvFile(file) {
 
   if (file.size > MAX_CV_FILE_SIZE_BYTES) {
     showError(
-      `That file is ${formatFileSize(file.size)} — please upload a resume under ${formatFileSize(MAX_CV_FILE_SIZE_BYTES)}.`
+      `That file is ${formatFileSize(file.size)}. Please upload a resume under ${formatFileSize(MAX_CV_FILE_SIZE_BYTES)}.`
     );
     removeFile();
     return;
@@ -1352,7 +1352,7 @@ function markEdited() {
     return;
   }
   editStatusDot.classList.add("is-edited");
-  editStatusText.textContent = "Edited — download to save your changes";
+  editStatusText.textContent = "Edited. Download to save changes.";
 }
 function resetEditStatus() {
   if (!editStatusText) return;
@@ -1447,9 +1447,9 @@ btnCopyText.addEventListener("click", async () => {
   try {
     const text = cvDocumentPaper.innerText.replace(/\n{3,}/g, "\n\n").trim();
     await navigator.clipboard.writeText(text);
-    showToast("Copied — paste it into any application form.");
+    showToast("Copied to clipboard.");
   } catch (err) {
-    showToast("Couldn't copy automatically — select the text and copy it manually.", true);
+    showToast("Could not copy automatically. Select the text and copy it manually.", true);
   }
 });
 
@@ -1813,7 +1813,7 @@ function renderLayoutOptions() {
         ${isRecommended ? `<span class="layout-option__badge">Recommended</span>` : ""}
       </span>
       <span class="layout-option__tagline">${escapeHtml(layout.tagline)}</span>
-      </span><span class="layout-option__check" aria-hidden="true">${isActive ? "✓" : ""}</span>
+      </span><span class="layout-option__check" aria-hidden="true">${isActive ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>' : ""}</span>
     </button>`;
   }).join("");
 }
@@ -3145,7 +3145,7 @@ tailorBtn.addEventListener("click", async () => {
   if (isTailoring) return;
 
   if (isProcessingFile) {
-    showError("Still reading your resume file — one moment and try again.");
+    showError("Still reading your resume file. Try again in a moment.");
     return;
   }
 
@@ -3253,7 +3253,7 @@ tailorBtn.addEventListener("click", async () => {
 
     if (!isUsableCv(finalData)) {
       throw new Error(
-        "We couldn't get a complete resume back this time. Your details are still here — try again, or switch to Light touch and shorten the job description."
+        "Could not generate a complete resume this time. Your inputs are kept; try again or switch to Light touch."
       );
     }
 
@@ -3282,7 +3282,7 @@ tailorBtn.addEventListener("click", async () => {
   } catch (err) {
     showView("viewInput");
     if (err.name === "AbortError") {
-      showToast("Cancelled — your résumé and job details are still here.");
+      showToast("Tailoring cancelled. Your inputs are still here.");
     } else if (err.name === "TypeError" && /fetch/i.test(err.message || "")) {
       reportClientActivity("tailoring_failed", err);
       showError("Couldn't reach the server. Please check your connection and try again.");
@@ -3353,7 +3353,7 @@ function updateReadiness() {
   const status = el("readinessText");
   if (ready && el("workspaceErrorText").textContent.startsWith("Please fill in the highlighted")) el("workspaceError").hidden = true;
   status.classList.toggle("is-ready", ready);
-  status.textContent = isProcessingFile ? "Reading your resume…" : ready ? "✓ Everything's here. Let's make it count." : "Add your resume, job title, and description";
+  status.textContent = isProcessingFile ? "Reading your resume…" : ready ? "Ready to tailor" : "Add your resume, job title, and description";
 }
 
 async function switchSource(mode) {
@@ -3392,11 +3392,11 @@ updateReadiness();
 
 function setReviewContext(example) {
   isExample = example;
-  el("reviewEyebrow").textContent = example ? "EXPLORE THE EDITOR" : "READY FOR YOUR REVIEW";
-  el("reviewHeading").textContent = example ? "Meet your next resume." : "A stronger next step.";
+  el("reviewEyebrow").textContent = example ? "EXAMPLE" : "EDITOR";
+  el("reviewHeading").textContent = example ? "Example resume" : "Review and refine";
   el("reviewContext").textContent = example
-    ? "Fictional details. Real editing tools. Try making a change below."
-    : [jobTitle.value.trim(), jobCompany.value.trim()].filter(Boolean).join(" at ") || "Your tailored resume is ready to make your own.";
+    ? "Sample data with full inline editing enabled."
+    : [jobTitle.value.trim(), jobCompany.value.trim()].filter(Boolean).join(" at ") || "Click anywhere on the page to edit before downloading.";
 }
 
 el("previewExampleBtn").addEventListener("click", () => {

@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>CV Tailor — AI Resume Tailor</title>
-  <meta name="description" content="Tailor your resume to any job in seconds. Vector PDF output with clickable links and executive formatting.">
+  <title>CV Tailor | Tailored Resumes &amp; PDF Export</title>
+  <meta name="description" content="Tailor your resume to any job in seconds. Clean A4 vector PDF output with clickable links and live editing.">
   <meta name="theme-color" content="#0057b8">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -33,13 +33,13 @@
   <link rel="manifest" href="/assets/site.webmanifest">
 
   <!-- Open Graph / Social -->
-  <meta property="og:title" content="CV Tailor — AI Resume Tailor">
-  <meta property="og:description" content="Tailor your resume to any job in seconds. Vector PDF output with clickable links and executive formatting.">
+  <meta property="og:title" content="CV Tailor | Tailored Resumes &amp; PDF Export">
+  <meta property="og:description" content="Tailor your resume to any job in seconds. Clean A4 vector PDF output with clickable links and live editing.">
   <meta property="og:image" content="/assets/og-logo.png">
   <meta property="og:type" content="website">
   <meta name="twitter:card" content="summary">
-  <meta name="twitter:title" content="CV Tailor — AI Resume Tailor">
-  <meta name="twitter:description" content="Tailor your resume to any job in seconds. Vector PDF output with clickable links and executive formatting.">
+  <meta name="twitter:title" content="CV Tailor | Tailored Resumes &amp; PDF Export">
+  <meta name="twitter:description" content="Tailor your resume to any job in seconds. Clean A4 vector PDF output with clickable links and live editing.">
   <meta name="twitter:image" content="/assets/og-logo.png">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -70,7 +70,7 @@
   <!-- Header -->
   <header class="topbar" id="siteTopbar">
     <div class="topbar__inner">
-      <div class="brand" id="brandLogo" role="button" tabindex="0" aria-label="CV Tailor — go to main page">
+      <div class="brand" id="brandLogo" role="button" tabindex="0" aria-label="CV Tailor, return to home">
         <div class="brand__icon">
           <img src="/assets/logo-header.png" alt="CV Tailor logo" width="28" height="28">
         </div>
@@ -95,18 +95,25 @@
       <section class="hero" id="heroSection">
 
         <div class="hero__copy">
-          <p class="eyebrow"><span class="eyebrow__line"></span> YOUR EXPERIENCE. BETTER EXPRESSED.</p>
-          <h1 class="hero__title">The right words.<br>The next <span class="hero__title-accent">opportunity.</span></h1>
-          <p class="hero__sub">From your first opportunity to your next big move. Turn your experience into a clear, focused resume for the role you want, in Egypt and across the region.</p>
+          <p class="eyebrow"><span class="eyebrow__line"></span> TAILORED RESUMES</p>
+          <h1 class="hero__title">The right resume<br>for every <span class="hero__title-accent">role.</span></h1>
+          <p class="hero__sub">Upload your PDF or Word resume, paste the target job description, and export a clean, editable A4 PDF in seconds.</p>
 
           <div class="hero__actions">
             <button type="button" class="cta cta--primary" id="heroStartBtn">
               <span>Start tailoring</span>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
             </button>
-            <button type="button" class="text-action" id="previewExampleBtn">Explore an example <span aria-hidden="true">↗</span></button>
+            <button type="button" class="text-action" id="previewExampleBtn">
+              <span>Explore an example</span>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M7 7h10v10"/></svg>
+            </button>
           </div>
-          <div class="hero__assurances"><span>✓ No sign-up</span><span>✓ Editable results</span><span>✓ PDF export</span></div>
+          <div class="hero__assurances">
+            <span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg> No sign-up</span>
+            <span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg> Live editor</span>
+            <span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg> Vector PDF export</span>
+          </div>
         </div>
 
         <div class="role-lab" data-layout="chronological" aria-label="AI career resume showcase">
@@ -123,25 +130,24 @@
       <section class="how-it-works" id="howItWorks">
         <div class="how-it-works__step" data-reveal style="--reveal-delay: 0s">
           <span class="how-it-works__num">1</span>
-          <h3>Upload your résumé</h3>
-          <p>Start with a PDF, Word document, or the text you already have.</p>
+          <h3>Upload your resume</h3>
+          <p>Drop in a PDF, Word document, or plain text.</p>
         </div>
         <div class="how-it-works__step" data-reveal style="--reveal-delay: 0.08s">
           <span class="how-it-works__num">2</span>
-          <h3>Add the target role</h3>
-          <p>Share the role and job description. We'll focus on what matters.</p>
+          <h3>Add the job details</h3>
+          <p>Paste the target role title and description.</p>
         </div>
         <div class="how-it-works__step" data-reveal style="--reveal-delay: 0.16s">
           <span class="how-it-works__num">3</span>
-          <h3>Make it yours</h3>
-          <p>Review the draft, edit the details, and export a clean PDF.</p>
+          <h3>Review and export</h3>
+          <p>Edit inline, switch layouts, and download PDF.</p>
         </div>
       </section>
 
       <section id="tailorWorkspace" aria-labelledby="workspaceHeading" tabindex="-1">
       <div class="workspace-heading">
-        <div><p class="eyebrow">LET'S MAKE YOUR NEXT MOVE</p><h2 id="workspaceHeading">Your next chapter starts here.</h2><p>Two ingredients. One resume that speaks to the role.</p></div>
-        <span class="workspace-label">RESUME WORKSPACE <span aria-hidden="true">↙</span></span>
+        <div><p class="eyebrow">WORKSPACE</p><h2 id="workspaceHeading">Prepare your tailored resume</h2><p>Add your current resume and the role you are applying for.</p></div>
       </div>
       <div id="workspaceError" class="workspace-error" role="alert" hidden><span id="workspaceErrorText"></span><button type="button" id="dismissWorkspaceError" aria-label="Dismiss error">×</button></div>
       <div class="panels">
@@ -169,8 +175,8 @@
               </svg>
             </div>
             <div class="drop-text">Drop your resume here</div>
-            <div class="drop-subtext">PDF or DOCX · up to 10 MB</div>
-            <span class="browse-file">Choose a file <span aria-hidden="true">↑</span></span>
+            <div class="drop-subtext">PDF or DOCX up to 10 MB</div>
+            <span class="browse-file">Choose a file <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg></span>
             <input type="file" id="cvFile" accept=".pdf,.docx" hidden>
           </div>
 
@@ -191,7 +197,7 @@
           <!-- Holds extracted resume text (from PDF/DOCX) or direct pasted text when in Paste mode. -->
           <textarea id="cvText" hidden aria-label="Resume text" placeholder="Paste your resume here, including your contact details, experience, education, and skills…"></textarea>
           <p class="field-error" id="resumeError" hidden>Add your resume to get started.</p>
-          <div class="upload-note"><span aria-hidden="true">↗</span><p><strong>Your experience is the starting point.</strong><br>We focus the wording on the role. You review every detail before sending.</p></div>
+          <div class="upload-note"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg><p><strong>Your facts stay intact.</strong><br>We tailor the framing to the role, and you review every line before exporting.</p></div>
         </div>
 
         <!-- Panel 2: Target Job -->
@@ -240,10 +246,10 @@
         <div class="processing-status-wrapper">
           <div class="processing-spinner"></div>
           <div class="processing-text-group">
-            <h2 id="processingMainHeading" class="processing-page-title">Your next chapter, taking shape.</h2>
+            <h2 id="processingMainHeading" class="processing-page-title">Tailoring your resume</h2>
             <p id="processingStatusText" class="processing-page-sub" role="status" aria-live="polite">Opening your resume…</p>
           </div>
-          <button type="button" class="tool-btn processing-cancel-btn" id="btnCancelTailoring" title="Stop and go back — your résumé and job details are kept">
+          <button type="button" class="tool-btn processing-cancel-btn" id="btnCancelTailoring" title="Stop tailoring and return to the form">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 6l12 12M18 6L6 18"/></svg>
             Cancel
           </button>
@@ -252,7 +258,7 @@
 
       <section class="live-workspace" aria-label="Tailoring progress">
         <div class="live-workspace__activity">
-          <p class="eyebrow">MADE FOR YOUR NEXT MOVE</p>
+          <p class="eyebrow">IN PROGRESS</p>
           <h3 id="progressRole"></h3>
           <ol class="live-steps">
             <li data-progress-phase="sending"><span>1</span><div><strong>Open your resume</strong><p>Your experience is the starting point.</p></div></li>
@@ -289,7 +295,7 @@
 
     <!-- VIEW 3: INTERACTIVE WORKBENCH & EDITABLE DOCUMENT -->
     <div id="viewWorkbench" class="view-page" hidden>
-      <div class="review-heading"><div><p class="eyebrow" id="reviewEyebrow">READY FOR YOUR REVIEW</p><h2 id="reviewHeading" tabindex="-1">A stronger next step.</h2><p id="reviewContext">Your tailored resume is ready to make your own.</p></div></div>
+      <div class="review-heading"><div><p class="eyebrow" id="reviewEyebrow">EDITOR</p><h2 id="reviewHeading" tabindex="-1">Review and refine</h2><p id="reviewContext">Click anywhere on the page to edit before downloading.</p></div></div>
       <div id="workbenchError" class="workspace-error" role="alert" hidden><span id="workbenchErrorText"></span><button type="button" id="dismissWorkbenchError" aria-label="Dismiss">×</button></div>
 
       <div class="glass-card output-card">
@@ -320,12 +326,12 @@
               <span class="btn--download__title" id="downloadPdfBtnTitle">Download PDF</span>
             </button>
 
-            <button type="button" class="tool-btn" id="btnCopyText" title="Copy the résumé text — handy for pasting into an application form" aria-label="Copy résumé text">
+            <button type="button" class="tool-btn" id="btnCopyText" title="Copy plain text for application forms" aria-label="Copy resume text">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="9" y="9" width="12" height="12" rx="1.5"/><path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1"/></svg>
               <span class="tool-btn__label">Copy text</span>
             </button>
 
-            <button type="button" class="tool-btn" id="btnLayout" aria-haspopup="true" aria-expanded="false" title="Change which sections lead the résumé — the order recruiters read it in">
+            <button type="button" class="tool-btn" id="btnLayout" aria-haspopup="true" aria-expanded="false" title="Switch section order and layout">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
               <span class="tool-btn__label">Layout: <span id="btnLayoutLabel">Career</span></span>
             </button>
@@ -440,7 +446,7 @@
     <p class="placeholder-popover__text" id="placeholderPopoverText"></p>
     <button type="button" class="placeholder-popover__btn placeholder-popover__btn--remove" id="placeholderPopoverRemove">Remove this bullet point</button>
     <p class="placeholder-popover__note" id="placeholderPopoverNote"></p>
-    <button type="button" class="placeholder-popover__btn" id="placeholderPopoverKeep">Keep it — I'll write something</button>
+    <button type="button" class="placeholder-popover__btn" id="placeholderPopoverKeep">Keep it and edit manually</button>
   </div>
 
   <script type="module" src="app.js"></script>
