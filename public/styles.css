@@ -2171,11 +2171,8 @@ html[data-theme="dark"] .footer__credit a { color: #78b4ff; }
 .layout-mini i:first-child { width: 65%; height: 4px; background: #25272b; align-self: center; }
 .layout-mini--hybrid i:nth-child(2) { height: 10px; background: repeating-linear-gradient(90deg, #d8dbe0 0 6px, white 6px 8px); }
 .layout-mini--technical i:nth-child(3) { height: 13px; }
-.layout-mini--academic i:first-child { align-self: flex-start; }
 .layout-mini--academic i:nth-child(2) { height: 12px; }
 .layout-popover__foot { margin-top: 12px; }
-.resume-paper:is(.layout-hybrid, .layout-technical, .layout-academic) .cv-header { text-align: left; }
-.resume-paper:is(.layout-hybrid, .layout-technical, .layout-academic) .cv-contact { justify-content: flex-start; }
 
 .cv-placeholder { cursor: pointer; }
 .placeholder-popover {
