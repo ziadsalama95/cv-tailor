@@ -1950,9 +1950,9 @@ html[data-theme="dark"] .footer__credit a { color: #78b4ff; }
 @media (max-width: 640px) {
   .wrap { padding: 0 18px; }
   .topbar {
-    width: 100%;
+    width: calc(100% - 20px);
     top: calc(10px + env(safe-area-inset-top, 0px));
-    padding: 6px 8px 6px 18px;
+    padding: 6px 8px 6px 16px;
   }
   .topbar.is-scrolled { top: calc(10px + env(safe-area-inset-top, 0px)); }
   .brand__name { font-size: 19px; }

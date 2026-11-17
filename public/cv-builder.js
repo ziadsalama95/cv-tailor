@@ -1,5 +1,12 @@
 const BUILDER_STORAGE_KEY = "cvtailor-builder-draft-v1";
 const TAB_ORDER = ["basics", "links", "experience", "education", "skills"];
+const TAB_LABELS = {
+  basics: "Basics",
+  links: "Links",
+  experience: "Experience",
+  education: "Education & Projects",
+  skills: "Skills & More",
+};
 
 function cleanStr(value) {
   return String(value == null ? "" : value).trim();
@@ -19,6 +26,14 @@ function splitLines(text) {
     .split(/\r?\n/)
     .map((line) => line.replace(/^[-•*]\s*/, "").trim())
     .filter(Boolean);
+}
+
+export function normalizeDates(value) {
+  const s = cleanStr(value);
+  if (!s) return "";
+  return s
+    .replace(/\s+-\s+/g, " – ")
+    .replace(/(\b(?:19|20)\d{2})\s*-\s*(\b(?:19|20)\d{2}|Present|Current|Now)\b/gi, "$1 – $2");
 }
 
 export function defaultBuilderState() {
@@ -47,6 +62,132 @@ export function defaultBuilderState() {
   };
 }
 
+export function sampleBuilderState() {
+  return {
+    layout: "chronological",
+    name: "Sara Ahmed",
+    title: "Senior Backend Engineer",
+    email: "sara.ahmed@example.com",
+    phone: "+20 10 1234 5678",
+    location: "",
+    summary:
+      "Backend engineer with 5+ years of experience designing high-throughput APIs, distributed job queues, and cloud-native services in Node.js, TypeScript, and PostgreSQL.",
+    linkedin: "linkedin.com/in/sara-ahmed",
+    github: "github.com/sara-ahmed",
+    portfolio: "saraahmed.dev",
+    links: [{ label: "Medium", url: "https://medium.com/@sara-ahmed" }],
+    experience: [
+      {
+        role: "Senior Backend Engineer",
+        company: "PayFlow Technologies",
+        dates: "2023 - Present",
+        kind: "industry",
+        bullets:
+          "Architected an idempotent settlement pipeline processing 1.4M daily transactions at 99.98% uptime\n" +
+          "Reduced p95 checkout API latency by 42% by introducing Redis read-through caching and query indexing\n" +
+          "Mentored 4 engineers and standardized CI/CD automated contract testing across 9 microservices",
+      },
+      {
+        role: "Backend Engineer",
+        company: "NileCloud Systems",
+        dates: "2020 - 2023",
+        kind: "industry",
+        bullets:
+          "Built multi-tenant webhook delivery workers with exponential backoff and dead-letter recovery\n" +
+          "Migrated core reporting queries to partitioned PostgreSQL tables, cutting report generation from 18s to 1.2s",
+      },
+    ],
+    education: [
+      {
+        degree: "B.Sc. in Computer Engineering",
+        institution: "Cairo University",
+        dates: "2016 - 2020",
+        details: "Very Good with Honors",
+      },
+    ],
+    projects: [
+      {
+        title: "EdgeRateLimiter",
+        tech: "TypeScript, Cloudflare Workers, Durable Objects",
+        description: "Open-source sliding-window rate limiter handling 25k req/s with sub-millisecond edge overhead.",
+      },
+    ],
+    skills: [
+      { category: "Languages & Runtimes", items: "TypeScript, JavaScript, Node.js, Python, SQL" },
+      { category: "Databases & Messaging", items: "PostgreSQL, Redis, RabbitMQ, Kafka" },
+      { category: "Infrastructure", items: "Cloudflare Workers, Docker, Kubernetes, GitHub Actions" },
+    ],
+    certifications: "AWS Certified Solutions Architect – Associate (2024)",
+    awards: "First Place, FinTech Innovation Hackathon (2023)",
+    publications: "",
+  };
+}
+
+export function cvDataToBuilderState(data = {}) {
+  const d = data || {};
+  const c = d.contact || {};
+  const layoutKey = ["chronological", "hybrid", "technical", "academic"].includes(d.layout?.recommended || d.layout)
+    ? (d.layout?.recommended || d.layout)
+    : "chronological";
+
+  const expList = [
+    ...(Array.isArray(d.experience) ? d.experience : []),
+    ...(Array.isArray(d.research) ? d.research : []),
+    ...(Array.isArray(d.teaching) ? d.teaching : []),
+  ];
+
+  return {
+    layout: layoutKey,
+    name: cleanStr(d.name),
+    title: cleanStr(d.title),
+    email: cleanStr(c.email),
+    phone: cleanStr(c.phone),
+    location: cleanStr(c.location),
+    summary: cleanStr(d.summary),
+    linkedin: cleanStr(c.linkedin),
+    github: cleanStr(c.github),
+    portfolio: cleanStr(c.portfolio),
+    links: Array.isArray(d.links)
+      ? d.links.map((l) => ({ label: cleanStr(l?.label), url: cleanStr(l?.url) })).filter((l) => l.url)
+      : [],
+    experience: expList.length
+      ? expList.map((e) => ({
+          role: cleanStr(e?.role),
+          company: cleanStr(e?.company),
+          dates: cleanStr(e?.dates),
+          kind: ["industry", "research", "teaching"].includes(e?.kind) ? e.kind : "industry",
+          bullets: Array.isArray(e?.bullets) ? e.bullets.join("\n") : cleanStr(e?.bullets),
+        }))
+      : defaultBuilderState().experience,
+    education: Array.isArray(d.education) && d.education.length
+      ? d.education.map((ed) => ({
+          degree: cleanStr(ed?.degree),
+          institution: cleanStr(ed?.institution),
+          dates: cleanStr(ed?.dates),
+          details: cleanStr(ed?.details),
+        }))
+      : defaultBuilderState().education,
+    projects: Array.isArray(d.projects) && d.projects.length
+      ? d.projects.map((p) => ({
+          title: cleanStr(p?.title),
+          tech: cleanStr(p?.tech),
+          description: cleanStr(p?.description),
+        }))
+      : defaultBuilderState().projects,
+    skills: Array.isArray(d.skills) && d.skills.length
+      ? d.skills.map((sk) => ({
+          category: typeof sk === "object" ? cleanStr(sk?.category) : "",
+          items: typeof sk === "object"
+            ? (Array.isArray(sk?.items) ? sk.items.join(", ") : cleanStr(sk?.items))
+            : cleanStr(sk),
+        }))
+      : defaultBuilderState().skills,
+    certifications: Array.isArray(d.certifications) ? d.certifications.join("\n") : cleanStr(d.certifications),
+    awards: Array.isArray(d.awards) ? d.awards.join("\n") : cleanStr(d.awards),
+    publications: Array.isArray(d.publications) ? d.publications.join("\n") : cleanStr(d.publications),
+  };
+}
+
 export function buildCvDataFromState(state = {}) {
   const s = state || {};
   const links = (Array.isArray(s.links) ? s.links : [])
@@ -57,7 +198,7 @@ export function buildCvDataFromState(state = {}) {
     .map((item) => ({
       role: cleanStr(item?.role),
       company: cleanStr(item?.company),
-      dates: cleanStr(item?.dates),
+      dates: normalizeDates(item?.dates),
       kind: ["industry", "research", "teaching"].includes(item?.kind) ? item.kind : "industry",
       bullets: Array.isArray(item?.bullets)
         ? item.bullets.map(cleanStr).filter(Boolean)
@@ -69,7 +210,7 @@ export function buildCvDataFromState(state = {}) {
     .map((item) => ({
       degree: cleanStr(item?.degree),
       institution: cleanStr(item?.institution),
-      dates: cleanStr(item?.dates),
+      dates: normalizeDates(item?.dates),
       details: cleanStr(item?.details),
     }))
     .filter((item) => item.degree || item.institution || item.dates || item.details);
@@ -87,7 +228,7 @@ export function buildCvDataFromState(state = {}) {
       category: cleanStr(item?.category),
       items: Array.isArray(item?.items)
         ? item.items.map(cleanStr).filter(Boolean)
-        : String(item?.items || "").split(",").map((x) => x.trim()).filter(Boolean),
+        : String(item?.items || "").split(/[,;\n•]+/).map((x) => x.trim()).filter(Boolean),
     }))
     .filter((item) => item.items.length > 0);
 
@@ -96,6 +237,7 @@ export function buildCvDataFromState(state = {}) {
     : "chronological";
 
   return {
+    fromBuilder: true,
     name: cleanStr(s.name),
     title: cleanStr(s.title),
     layout: {
@@ -183,7 +325,7 @@ export function builderCvToPlainText(data = {}) {
   return lines.join("\n").trim();
 }
 
-export function initCvBuilder({ renderResume, onFinish, onTailor, onBack, confirmDialog, showToast }) {
+export function initCvBuilder({ renderResume, onFinish, onDownloadPdf, onTailor, onBack, confirmDialog, showToast }) {
   const viewBuilder = document.getElementById("viewBuilder");
   if (!viewBuilder) return null;
 
@@ -245,6 +387,24 @@ export function initCvBuilder({ renderResume, onFinish, onTailor, onBack, confir
     });
   }
 
+  function syncTabCounts() {
+    const data = buildCvDataFromState(state);
+    const linkCount = [data.contact.linkedin, data.contact.github, data.contact.portfolio].filter(Boolean).length + data.links.length;
+    const counts = {
+      basics: 0,
+      links: linkCount,
+      experience: data.experience.length,
+      education: data.education.length + data.projects.length,
+      skills: data.skills.length + data.certifications.length + data.awards.length + data.publications.length,
+    };
+    viewBuilder.querySelectorAll("[data-builder-tab]").forEach((btn) => {
+      const tab = btn.dataset.builderTab;
+      const base = TAB_LABELS[tab] || tab;
+      const n = counts[tab] || 0;
+      btn.textContent = n > 0 ? `${base} (${n})` : base;
+    });
+  }
+
   function setActiveTab(tab) {
     if (!TAB_ORDER.includes(tab)) return;
     activeTab = tab;
@@ -261,6 +421,17 @@ export function initCvBuilder({ renderResume, onFinish, onTailor, onBack, confir
     if (nextTabBtn) nextTabBtn.hidden = idx === TAB_ORDER.length - 1;
   }
 
+  function cardActionsHtml(listName, index, length, allowRemove = true) {
+    const upDisabled = index === 0 ? " disabled" : "";
+    const downDisabled = index >= length - 1 ? " disabled" : "";
+    return `
+      <div class="builder-card__actions">
+        ${length > 1 ? `<button type="button" class="builder-move-btn" data-move="up" data-list="${listName}" data-index="${index}" aria-label="Move up" title="Move up"${upDisabled}>&#8593;</button><button type="button" class="builder-move-btn" data-move="down" data-list="${listName}" data-index="${index}" aria-label="Move down" title="Move down"${downDisabled}>&#8595;</button>` : ""}
+        ${allowRemove ? `<button type="button" class="builder-remove-btn" data-remove="${listName}" data-index="${index}">Remove</button>` : ""}
+      </div>
+    `;
+  }
+
   function renderList(containerId, items, cardHtmlFn) {
     const container = document.getElementById(containerId);
     if (!container) return;
@@ -272,7 +443,7 @@ export function initCvBuilder({ renderResume, onFinish, onTailor, onBack, confir
       <div class="builder-card" data-list="links" data-index="${i}">
         <div class="builder-card__head">
           <span>Link ${i + 1}</span>
-          <button type="button" class="builder-remove-btn" data-remove="links" data-index="${i}">Remove</button>
+          ${cardActionsHtml("links", i, state.links.length, true)}
         </div>
         <div class="builder-grid">
           <label class="form-field"><span>Platform / label</span><input type="text" data-field="label" value="${escapeAttr(item.label)}" placeholder="e.g. Behance"></label>
@@ -285,7 +456,7 @@ export function initCvBuilder({ renderResume, onFinish, onTailor, onBack, confir
       <div class="builder-card" data-list="experience" data-index="${i}">
         <div class="builder-card__head">
           <span>Position ${i + 1}</span>
-          ${state.experience.length > 1 ? `<button type="button" class="builder-remove-btn" data-remove="experience" data-index="${i}">Remove</button>` : ""}
+          ${cardActionsHtml("experience", i, state.experience.length, state.experience.length > 1)}
         </div>
         <div class="builder-grid">
           <label class="form-field"><span>Job title</span><input type="text" data-field="role" value="${escapeAttr(item.role)}" placeholder="e.g. Software Engineer"></label>
@@ -309,7 +480,7 @@ export function initCvBuilder({ renderResume, onFinish, onTailor, onBack, confir
       <div class="builder-card" data-list="education" data-index="${i}">
         <div class="builder-card__head">
           <span>Degree ${i + 1}</span>
-          ${state.education.length > 1 ? `<button type="button" class="builder-remove-btn" data-remove="education" data-index="${i}">Remove</button>` : ""}
+          ${cardActionsHtml("education", i, state.education.length, state.education.length > 1)}
         </div>
         <div class="builder-grid">
           <label class="form-field"><span>Degree</span><input type="text" data-field="degree" value="${escapeAttr(item.degree)}" placeholder="e.g. B.Sc. Computer Science"></label>
@@ -324,7 +495,7 @@ export function initCvBuilder({ renderResume, onFinish, onTailor, onBack, confir
       <div class="builder-card" data-list="projects" data-index="${i}">
         <div class="builder-card__head">
           <span>Project ${i + 1}</span>
-          <button type="button" class="builder-remove-btn" data-remove="projects" data-index="${i}">Remove</button>
+          ${cardActionsHtml("projects", i, state.projects.length, true)}
         </div>
         <div class="builder-grid">
           <label class="form-field"><span>Project name</span><input type="text" data-field="title" value="${escapeAttr(item.title)}" placeholder="e.g. Realtime Order Tracker"></label>
@@ -340,7 +511,7 @@ export function initCvBuilder({ renderResume, onFinish, onTailor, onBack, confir
       <div class="builder-card" data-list="skills" data-index="${i}">
         <div class="builder-card__head">
           <span>Skill group ${i + 1}</span>
-          ${state.skills.length > 1 ? `<button type="button" class="builder-remove-btn" data-remove="skills" data-index="${i}">Remove</button>` : ""}
+          ${cardActionsHtml("skills", i, state.skills.length, state.skills.length > 1)}
         </div>
         <div class="builder-grid">
           <label class="form-field"><span>Category</span><input type="text" data-field="category" value="${escapeAttr(item.category)}" placeholder="e.g. Backend &amp; APIs"></label>
@@ -356,9 +527,9 @@ export function initCvBuilder({ renderResume, onFinish, onTailor, onBack, confir
     const paperW = previewPaper.offsetWidth;
     if (availableW <= 0 || paperW <= 0) return;
     const scale = Math.min(1, availableW / paperW);
-    previewPaper.style.transform = `scale(${scale})`;
-    previewSheet.style.width = `${Math.round(paperW * scale)}px`;
-    previewSheet.style.height = `${Math.round(previewPaper.offsetHeight * scale)}px`;
+    previewPaper.style.setProperty("--builder-scale", String(scale));
+    previewSheet.style.width = `${Math.floor(paperW * scale)}px`;
+    previewSheet.style.height = `${Math.ceil(previewPaper.offsetHeight * scale)}px`;
   }
 
   function renderPreview() {
@@ -366,33 +537,25 @@ export function initCvBuilder({ renderResume, onFinish, onTailor, onBack, confir
     const data = buildCvDataFromState(state);
     const hasAnyInput = Boolean(
       data.name || data.title || data.summary || data.contact.email || data.contact.phone ||
+      data.contact.linkedin || data.contact.github || data.contact.portfolio || data.links.length ||
       data.experience.length || data.education.length || data.projects.length || data.skills.length
     );
 
     const previewData = hasAnyInput ? data : {
+      fromBuilder: true,
       name: "Your Name",
       title: "Target Role Headline",
       contact: { email: "you@example.com", phone: "+20 10 1234 5678", linkedin: "linkedin.com/in/yourprofile" },
       summary: "Concise 2-3 sentence summary highlighting your core experience and strengths.",
       skills: [{ category: "Core Skills", items: ["Skill 1", "Skill 2", "Skill 3"] }],
-      experience: [{ role: "Role Title", company: "Company", dates: "2022 - Present", bullets: ["Key measurable achievement or impact."] }],
-      education: [{ degree: "Degree Title", institution: "University", dates: "2018 - 2022" }],
+      experience: [{ role: "Role Title", company: "Company", dates: "2022 – Present", bullets: ["Key measurable achievement or impact."] }],
+      education: [{ degree: "Degree Title", institution: "University", dates: "2018 – 2022" }],
     };
 
     const html = renderResume(previewData, { linksClickable: false, layout: state.layout });
-    const tpl = document.createElement("template");
-    tpl.innerHTML = html;
-    if (hasAnyInput) {
-      tpl.content.querySelectorAll(".cv-placeholder").forEach((node) => node.remove());
-      tpl.content.querySelectorAll(".cv-contact-item, .cv-bullets > li").forEach((node) => {
-        if (!node.textContent.trim()) node.remove();
-      });
-      tpl.content.querySelectorAll(".cv-section").forEach((sec) => {
-        if (![...sec.children].some((c) => !c.classList.contains("cv-section-title") && c.textContent.trim())) sec.remove();
-      });
-    }
     previewPaper.className = `resume-paper template-executive layout-${state.layout}`;
-    previewPaper.replaceChildren(tpl.content);
+    previewPaper.innerHTML = html;
+    syncTabCounts();
     requestAnimationFrame(fitPreview);
   }
 
@@ -430,6 +593,17 @@ export function initCvBuilder({ renderResume, onFinish, onTailor, onBack, confir
     renderPreview();
   });
 
+  viewBuilder.querySelector(".builder-tabs")?.addEventListener("keydown", (e) => {
+    if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+    const idx = TAB_ORDER.indexOf(activeTab);
+    const nextIdx = e.key === "ArrowRight"
+      ? (idx + 1) % TAB_ORDER.length
+      : (idx - 1 + TAB_ORDER.length) % TAB_ORDER.length;
+    setActiveTab(TAB_ORDER[nextIdx]);
+    viewBuilder.querySelector(`[data-builder-tab="${TAB_ORDER[nextIdx]}"]`)?.focus();
+    e.preventDefault();
+  });
+
   viewBuilder.addEventListener("click", (e) => {
     const tabBtn = e.target.closest("[data-builder-tab]");
     if (tabBtn) {
@@ -443,6 +617,22 @@ export function initCvBuilder({ renderResume, onFinish, onTailor, onBack, confir
       saveState();
       syncLayoutButtons();
       renderPreview();
+      return;
+    }
+
+    const moveBtn = e.target.closest("[data-move]");
+    if (moveBtn) {
+      const listName = moveBtn.dataset.list;
+      const index = Number(moveBtn.dataset.index);
+      const dir = moveBtn.dataset.move === "up" ? -1 : 1;
+      const list = state[listName];
+      const target = index + dir;
+      if (Array.isArray(list) && target >= 0 && target < list.length) {
+        [list[index], list[target]] = [list[target], list[index]];
+        saveState();
+        renderAllLists();
+        renderPreview();
+      }
       return;
     }
 
@@ -496,6 +686,25 @@ export function initCvBuilder({ renderResume, onFinish, onTailor, onBack, confir
 
   document.getElementById("builderBackBtn")?.addEventListener("click", () => onBack?.());
 
+  document.getElementById("builderSampleBtn")?.addEventListener("click", async () => {
+    const hasContent = Boolean(cleanStr(state.name) || buildCvDataFromState(state).experience.length);
+    if (hasContent) {
+      const ok = await confirmDialog({
+        title: "Load sample resume?",
+        message: "This replaces your current form entries with a complete sample resume.",
+        confirmLabel: "Load sample",
+      });
+      if (!ok) return;
+    }
+    state = sampleBuilderState();
+    saveState();
+    syncScalarsToDom();
+    syncLayoutButtons();
+    renderAllLists();
+    renderPreview();
+    showToast("Sample resume loaded.");
+  });
+
   document.getElementById("builderResetBtn")?.addEventListener("click", async () => {
     const ok = await confirmDialog({
       title: "Clear builder form?",
@@ -531,6 +740,12 @@ export function initCvBuilder({ renderResume, onFinish, onTailor, onBack, confir
     onFinish?.(data, builderCvToPlainText(data));
   });
 
+  document.getElementById("builderDownloadPdfBtn")?.addEventListener("click", () => {
+    const data = requireName();
+    if (!data) return;
+    onDownloadPdf?.(data, builderCvToPlainText(data));
+  });
+
   document.getElementById("builderTailorBtn")?.addEventListener("click", () => {
     const data = requireName();
     if (!data) return;
@@ -538,10 +753,13 @@ export function initCvBuilder({ renderResume, onFinish, onTailor, onBack, confir
   });
 
   if (previewStage && "ResizeObserver" in window) {
-    new ResizeObserver(fitPreview).observe(previewStage);
+    const ro = new ResizeObserver(fitPreview);
+    ro.observe(previewStage);
+    if (previewPaper) ro.observe(previewPaper);
   } else {
     window.addEventListener("resize", fitPreview);
   }
+  document.fonts?.ready.then(() => requestAnimationFrame(fitPreview));
 
   syncScalarsToDom();
   syncLayoutButtons();
@@ -554,6 +772,16 @@ export function initCvBuilder({ renderResume, onFinish, onTailor, onBack, confir
       syncScalarsToDom();
       syncLayoutButtons();
       renderAllLists();
+      renderPreview();
+      requestAnimationFrame(fitPreview);
+    },
+    loadFromCvData(data) {
+      state = cvDataToBuilderState(data);
+      saveState();
+      syncScalarsToDom();
+      syncLayoutButtons();
+      renderAllLists();
+      setActiveTab("basics");
       renderPreview();
       requestAnimationFrame(fitPreview);
     },

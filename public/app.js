@@ -2123,11 +2123,16 @@ function fieldOrPlaceholderLinked(value, label, clickable = true) {
 function buildContactHtml(data, clickable = true) {
   const items = [];
   const c = data.contact || {};
+  const fromBuilder = Boolean(data.fromBuilder);
   const push = (html, field) => { if (html) items.push({ html, field }); };
   const emailVal = c.email && String(c.email).trim();
-  push(!emailVal ? placeholder("YOUR EMAIL ADDRESS") : isPlaceholderText(emailVal) ? escapeHtml(emailVal) : formatContactLink(emailVal, "email", clickable), "email");
+  if (!fromBuilder || (emailVal && !isPlaceholderText(emailVal))) {
+    push(!emailVal ? placeholder("YOUR EMAIL ADDRESS") : isPlaceholderText(emailVal) ? escapeHtml(emailVal) : formatContactLink(emailVal, "email", clickable), "email");
+  }
   const phoneVal = c.phone && String(c.phone).trim();
-  push(!phoneVal ? placeholder("YOUR PHONE NUMBER") : isPlaceholderText(phoneVal) ? escapeHtml(phoneVal) : formatContactLink(phoneVal, "phone", clickable), "phone");
+  if (!fromBuilder || (phoneVal && !isPlaceholderText(phoneVal))) {
+    push(!phoneVal ? placeholder("YOUR PHONE NUMBER") : isPlaceholderText(phoneVal) ? escapeHtml(phoneVal) : formatContactLink(phoneVal, "phone", clickable), "phone");
+  }
   const locationVal = c.location && String(c.location).trim();
   if (locationVal && !isPlaceholderText(locationVal)) {
     push(formatContactLink(locationVal, "location", clickable), "location");
@@ -2600,6 +2605,7 @@ export function buildResumeInnerHtml(data, { includeContact = true, linksClickab
     ? window.CvLayouts.get(layoutKey).order
     : ["summary", "skills", "experience", "projects", "education"];
 
+  const fromBuilder = Boolean(data.fromBuilder);
   const adapted = Boolean(layout && window.CvLayouts);
   if (adapted) data = window.CvLayouts.adapt(data, layoutKey);
 
@@ -2610,7 +2616,7 @@ export function buildResumeInnerHtml(data, { includeContact = true, linksClickab
   const blocks = {};
 
   // Optional profiles do not need an empty summary section.
-  if (!adapted || data.summary?.trim()) blocks.summary = section("summary", titleOf("summary"), `<div class="cv-summary">${
+  if ((!adapted && !fromBuilder) || data.summary?.trim()) blocks.summary = section("summary", titleOf("summary"), `<div class="cv-summary">${
     data.summary && data.summary.trim()
       ? escapeHtml(data.summary)
       : placeholder("WRITE A 2-3 SENTENCE SUMMARY OF YOUR EXPERIENCE, KEY SKILLS, AND CAREER GOALS")
@@ -2634,17 +2640,28 @@ export function buildResumeInnerHtml(data, { includeContact = true, linksClickab
     for (const exp of data.experience) {
       body += `<div class="cv-entry">`;
       body += `<div class="cv-entry-head">`;
-      body += `<div class="cv-entry-title"><span class="cv-entry-role">${fieldOrPlaceholderLinked(exp.role, "JOB TITLE", linksClickable)}</span><span class="cv-entry-company"> — ${fieldOrPlaceholderLinked(exp.company, "COMPANY NAME", linksClickable)}</span></div>`;
-      body += `<div class="cv-entry-dates">${fieldOrPlaceholder(exp.dates, "START – END DATE")}</div>`;
+      const roleHtml = exp.role && String(exp.role).trim()
+        ? escapeAndAutoLink(String(exp.role).trim(), linksClickable)
+        : (fromBuilder ? "" : escapeHtml(placeholder("JOB TITLE")));
+      const companyHtml = exp.company && String(exp.company).trim()
+        ? `<span class="cv-entry-company">${roleHtml ? " — " : ""}${escapeAndAutoLink(String(exp.company).trim(), linksClickable)}</span>`
+        : (fromBuilder ? "" : `<span class="cv-entry-company"> — ${escapeHtml(placeholder("COMPANY NAME"))}</span>`);
+      const datesHtml = exp.dates && String(exp.dates).trim()
+        ? escapeHtml(String(exp.dates).trim())
+        : (fromBuilder ? "" : escapeHtml(placeholder("START – END DATE")));
+      body += `<div class="cv-entry-title">${roleHtml ? `<span class="cv-entry-role">${roleHtml}</span>` : ""}${companyHtml}</div>`;
+      if (datesHtml) body += `<div class="cv-entry-dates">${datesHtml}</div>`;
       body += `</div>`;
       const validBullets = exp.bullets && Array.isArray(exp.bullets) ? exp.bullets.filter((b) => b && b.trim()) : [];
-      body += `<ul class="cv-bullets">`;
-      if (validBullets.length > 0) {
-        for (const b of validBullets) body += `<li>${escapeAndAutoLink(b, linksClickable)}</li>`;
-      } else {
-        if (!adapted) body += `<li>${placeholder("ADD 2-3 BULLET POINTS DESCRIBING YOUR KEY ACHIEVEMENTS IN THIS ROLE")}</li>`;
+      if (validBullets.length > 0 || (!adapted && !fromBuilder)) {
+        body += `<ul class="cv-bullets">`;
+        if (validBullets.length > 0) {
+          for (const b of validBullets) body += `<li>${escapeAndAutoLink(b, linksClickable)}</li>`;
+        } else {
+          body += `<li>${placeholder("ADD 2-3 BULLET POINTS DESCRIBING YOUR KEY ACHIEVEMENTS IN THIS ROLE")}</li>`;
+        }
+        body += `</ul>`;
       }
-      body += `</ul>`;
       body += `</div>`;
     }
     blocks.experience = section("experience", titleOf("experience"), body);
@@ -2657,11 +2674,13 @@ export function buildResumeInnerHtml(data, { includeContact = true, linksClickab
       body += `<div class="cv-entry-head">`;
       body += `<div class="cv-entry-title"><span class="cv-entry-role">${fieldOrPlaceholderLinked(proj.title, "PROJECT TITLE", linksClickable)}</span>${proj.tech ? ` <span class="cv-entry-sub">(${escapeAndAutoLink(proj.tech, linksClickable)})</span>` : ""}</div>`;
       body += `</div>`;
-      body += `<div class="cv-summary" style="margin-top:2px;">${
-        proj.description && proj.description.trim()
-          ? escapeAndAutoLink(proj.description, linksClickable)
-          : placeholder("DESCRIBE THIS PROJECT AND ITS IMPACT")
-      }</div>`;
+      if ((proj.description && proj.description.trim()) || !fromBuilder) {
+        body += `<div class="cv-summary" style="margin-top:2px;">${
+          proj.description && proj.description.trim()
+            ? escapeAndAutoLink(proj.description, linksClickable)
+            : placeholder("DESCRIBE THIS PROJECT AND ITS IMPACT")
+        }</div>`;
+      }
       body += `</div>`;
     }
     blocks.projects = section("projects", titleOf("projects"), body);
@@ -2672,8 +2691,17 @@ export function buildResumeInnerHtml(data, { includeContact = true, linksClickab
     for (const edu of data.education) {
       body += `<div class="cv-entry">`;
       body += `<div class="cv-entry-head">`;
-      body += `<div class="cv-entry-title"><span class="cv-entry-role">${fieldOrPlaceholderLinked(edu.degree, "DEGREE TITLE", linksClickable)}</span><span class="cv-entry-company"> — ${fieldOrPlaceholderLinked(edu.institution, "INSTITUTION NAME", linksClickable)}</span></div>`;
-      body += `<div class="cv-entry-dates">${fieldOrPlaceholder(edu.dates, "START – END DATE")}</div>`;
+      const degreeHtml = edu.degree && String(edu.degree).trim()
+        ? escapeAndAutoLink(String(edu.degree).trim(), linksClickable)
+        : (fromBuilder ? "" : escapeHtml(placeholder("DEGREE TITLE")));
+      const instHtml = edu.institution && String(edu.institution).trim()
+        ? `<span class="cv-entry-company">${degreeHtml ? " — " : ""}${escapeAndAutoLink(String(edu.institution).trim(), linksClickable)}</span>`
+        : (fromBuilder ? "" : `<span class="cv-entry-company"> — ${escapeHtml(placeholder("INSTITUTION NAME"))}</span>`);
+      const eduDatesHtml = edu.dates && String(edu.dates).trim()
+        ? escapeHtml(String(edu.dates).trim())
+        : (fromBuilder ? "" : escapeHtml(placeholder("START – END DATE")));
+      body += `<div class="cv-entry-title">${degreeHtml ? `<span class="cv-entry-role">${degreeHtml}</span>` : ""}${instHtml}</div>`;
+      if (eduDatesHtml) body += `<div class="cv-entry-dates">${eduDatesHtml}</div>`;
       body += `</div>`;
       if (edu.details) body += `<div class="cv-entry-sub">${escapeHtml(edu.details)}</div>`;
       body += `</div>`;
@@ -2684,7 +2712,7 @@ export function buildResumeInnerHtml(data, { includeContact = true, linksClickab
   for (const key of ["research", "teaching"]) {
     if (!data[key]?.length) continue;
     const fragment = document.createElement("template");
-    fragment.innerHTML = buildResumeInnerHtml({ experience: data[key] }, { includeContact: false, linksClickable });
+    fragment.innerHTML = buildResumeInnerHtml({ experience: data[key], fromBuilder }, { includeContact: false, linksClickable });
     const entries = fragment.content.querySelector('[data-section="experience"]');
     entries.querySelector(".cv-section-title").remove();
     blocks[key] = section(key, titleOf(key), entries.innerHTML);
@@ -2695,7 +2723,7 @@ export function buildResumeInnerHtml(data, { includeContact = true, linksClickab
   }
   let html = `<div class="cv-header" data-layout="${layoutKey}">`;
   html += `<div class="cv-name">${fieldOrPlaceholder(data.name, "YOUR FULL NAME")}</div>`;
-  if (!adapted || data.title) html += `<div class="cv-title">${fieldOrPlaceholder(data.title, "YOUR PROFESSIONAL TITLE")}</div>`;
+  if ((!adapted && !fromBuilder) || (data.title && String(data.title).trim())) html += `<div class="cv-title">${fieldOrPlaceholder(data.title, "YOUR PROFESSIONAL TITLE")}</div>`;
   if (includeContact) html += buildContactHtml(data, linksClickable);
   html += `</div>`;
 
@@ -3401,44 +3429,52 @@ function setReviewContext(example) {
     : [jobTitle.value.trim(), jobCompany.value.trim()].filter(Boolean).join(" at ") || "Click anywhere on the page to edit before downloading.";
 }
 
+function loadBuilderIntoWorkbench(data, plainText) {
+  resetExtractedLinks();
+  if (data.contact?.linkedin) recordExtractedLink(data.contact.linkedin, data.contact.linkedin);
+  if (data.contact?.github) recordExtractedLink(data.contact.github, data.contact.github);
+  if (data.contact?.portfolio) recordExtractedLink(data.contact.portfolio, data.contact.portfolio);
+  for (const l of data.links || []) recordExtractedLink(l.label || l.url, l.url);
+
+  activeRequestId = crypto.randomUUID();
+  uploadedFileName = `${data.name}_Resume.pdf`;
+  layoutRecommendation = {
+    key: data.layout?.recommended || "chronological",
+    reason: "Selected in CV Builder.",
+  };
+  renderExecutiveResume(data, DEFAULT_TEMPLATE, layoutRecommendation.key);
+  originalCvData = JSON.parse(JSON.stringify(data));
+  originalTemplate = DEFAULT_TEMPLATE;
+  resetEditStatus();
+  setReviewContext(false);
+  hideWorkbenchError();
+  showView("viewWorkbench");
+
+  fetch("/api/prepare", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      sessionId: getOrCreateSessionId(),
+      requestId: activeRequestId,
+      cvText: plainText,
+      jobTitle: data.title || "Built CV",
+      intensity: "builder",
+      ...currentVisitorContext(),
+    }),
+  }).catch(() => {});
+}
+
 const cvBuilder = initCvBuilder({
   renderResume: buildResumeInnerHtml,
   confirmDialog,
   showToast,
   onBack: () => showView("viewInput"),
   onFinish: (data, plainText) => {
-    resetExtractedLinks();
-    if (data.contact?.linkedin) recordExtractedLink(data.contact.linkedin, data.contact.linkedin);
-    if (data.contact?.github) recordExtractedLink(data.contact.github, data.contact.github);
-    if (data.contact?.portfolio) recordExtractedLink(data.contact.portfolio, data.contact.portfolio);
-    for (const l of data.links || []) recordExtractedLink(l.label || l.url, l.url);
-
-    activeRequestId = crypto.randomUUID();
-    uploadedFileName = `${data.name}_Resume.pdf`;
-    layoutRecommendation = {
-      key: data.layout?.recommended || "chronological",
-      reason: "Selected in CV Builder.",
-    };
-    renderExecutiveResume(data, DEFAULT_TEMPLATE, layoutRecommendation.key);
-    originalCvData = JSON.parse(JSON.stringify(data));
-    originalTemplate = DEFAULT_TEMPLATE;
-    resetEditStatus();
-    setReviewContext(false);
-    hideWorkbenchError();
-    showView("viewWorkbench");
-
-    fetch("/api/prepare", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        sessionId: getOrCreateSessionId(),
-        requestId: activeRequestId,
-        cvText: plainText,
-        jobTitle: data.title || "Built CV",
-        intensity: "builder",
-        ...currentVisitorContext(),
-      }),
-    }).catch(() => {});
+    loadBuilderIntoWorkbench(data, plainText);
+  },
+  onDownloadPdf: (data, plainText) => {
+    loadBuilderIntoWorkbench(data, plainText);
+    requestAnimationFrame(() => downloadPdfBtn?.click());
   },
   onTailor: (data, plainText) => {
     resetExtractedLinks();
@@ -3472,6 +3508,11 @@ function openCvBuilder() {
 
 el("previewExampleBtn")?.addEventListener("click", openCvBuilder);
 el("sourceBuild")?.addEventListener("click", openCvBuilder);
+el("btnEditInBuilder")?.addEventListener("click", () => {
+  if (!parsedCvData || isTailoring) return;
+  cvBuilder?.loadFromCvData(parsedCvData);
+  showView("viewBuilder");
+});
 
 // Browser-native protection covers refresh/close as well as internal navigation.
 window.addEventListener("beforeunload", (event) => {

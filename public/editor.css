@@ -116,10 +116,11 @@ html .resume-paper :is(.cv-entry-company,.cv-entry-dates,.cv-entry-sub) { color:
 html .resume-paper :is(.cv-summary,.cv-bullets li,.cv-skill-row) { color: var(--cv-ink-soft); font-size: 9.75pt; line-height: 1.38; }
 html .resume-paper .cv-section-title { border-color: var(--cv-hairline); font-family: 'PT Serif', Georgia, serif; font-size: 10.5pt; letter-spacing: .07em; margin-top: 14px; margin-bottom: 8px; padding-bottom: 4px; }
 html .resume-paper .cv-section-title::after { display: none; }
-html .resume-paper .cv-contact { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 10px; margin-top: 7px; font-family: inherit; font-size: 9pt; }
+html .resume-paper .cv-contact { display: flex; flex-wrap: wrap; justify-content: center; gap: 5px 14px; margin-top: 7px; font-family: inherit; font-size: 9pt; }
 html .resume-paper .cv-contact-item { display: inline-flex; align-items: center; }
-html .resume-paper .cv-contact-item::after { content: "•"; margin-left: 10px; color: #9ca3af; }
-html .resume-paper .cv-contact-item:last-child::after { content: ""; margin-left: 0; }
+html .resume-paper:not(.icons-hidden) .cv-contact-item::after { content: none; margin-left: 0; }
+html .resume-paper.icons-hidden .cv-contact-item::after { content: "•"; margin-left: 12px; color: #9ca3af; }
+html .resume-paper.icons-hidden .cv-contact-item:last-child::after { content: ""; margin-left: 0; }
 html .resume-paper :is(.cv-entry-dates,.cv-entry-sub) { font-size: 9pt; }
 html .resume-paper .cv-entry-company { font-size: 9.5pt; font-style: italic; font-weight: 400; }
 html .resume-paper .cv-link { text-decoration: underline; text-underline-offset: 2px; }
