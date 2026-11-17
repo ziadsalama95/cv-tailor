@@ -105,8 +105,8 @@
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
             </button>
             <button type="button" class="text-action" id="previewExampleBtn">
-              <span>Explore an example</span>
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M7 7h10v10"/></svg>
+              <span>Build a CV from scratch</span>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
             </button>
           </div>
           <div class="hero__assurances">
@@ -162,6 +162,7 @@
           <div class="source-switch" role="group" aria-label="Resume input method">
             <button type="button" id="sourceUpload" aria-pressed="true">Upload a file</button>
             <button type="button" id="sourcePaste" aria-pressed="false">Paste text</button>
+            <button type="button" id="sourceBuild" aria-pressed="false">Build CV</button>
           </div>
 
           <div id="cvDropZone" class="drop-zone" role="button" tabindex="0" aria-label="Upload your resume file">
@@ -236,6 +237,151 @@
         </button></div>
       </div>
       </section>
+    </div>
+
+    <!-- VIEW 1B: CV BUILDER STUDIO -->
+    <div id="viewBuilder" class="view-page" hidden>
+      <div class="builder-header">
+        <div>
+          <p class="eyebrow">CV BUILDER</p>
+          <h2 id="builderHeading" tabindex="-1">Build your resume</h2>
+          <p class="builder-sub">Fill in your details below. Your A4 preview updates live as you type.</p>
+        </div>
+        <div class="builder-header__actions">
+          <button type="button" class="tool-btn" id="builderBackBtn">Back</button>
+          <button type="button" class="tool-btn tool-btn--reset" id="builderResetBtn">Clear</button>
+          <button type="button" class="tool-btn" id="builderTailorBtn">Tailor to a job</button>
+          <button type="button" class="btn btn--cta" id="builderFinishBtn">
+            <span>Open in Editor &amp; Export PDF</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="builder-studio">
+        <div class="builder-form glass-card">
+          <div class="builder-tabs" role="tablist" aria-label="Resume sections">
+            <button type="button" class="builder-tab is-active" role="tab" aria-selected="true" data-builder-tab="basics">Basics</button>
+            <button type="button" class="builder-tab" role="tab" aria-selected="false" data-builder-tab="links">Links</button>
+            <button type="button" class="builder-tab" role="tab" aria-selected="false" data-builder-tab="experience">Experience</button>
+            <button type="button" class="builder-tab" role="tab" aria-selected="false" data-builder-tab="education">Education &amp; Projects</button>
+            <button type="button" class="builder-tab" role="tab" aria-selected="false" data-builder-tab="skills">Skills &amp; More</button>
+          </div>
+
+          <div class="builder-pane" data-builder-pane="basics" role="tabpanel">
+            <div class="builder-grid">
+              <div class="form-field">
+                <label for="bName">Full name <span class="required-label">Required</span></label>
+                <input type="text" id="bName" placeholder="e.g. Sara Ahmed" autocomplete="name">
+              </div>
+              <div class="form-field">
+                <label for="bTitle">Headline / target role <span>Optional</span></label>
+                <input type="text" id="bTitle" placeholder="e.g. Senior Backend Engineer">
+              </div>
+              <div class="form-field">
+                <label for="bEmail">Email address <span>Optional</span></label>
+                <input type="text" id="bEmail" inputmode="email" placeholder="e.g. sara@example.com" autocomplete="email">
+              </div>
+              <div class="form-field">
+                <label for="bPhone">Phone / WhatsApp (with country code) <span>Optional</span></label>
+                <input type="text" id="bPhone" inputmode="tel" placeholder="e.g. +20 10 1234 5678" autocomplete="tel">
+              </div>
+              <div class="form-field builder-span-2">
+                <label for="bLocation">Location (only if needed for the role) <span>Optional</span></label>
+                <input type="text" id="bLocation" placeholder="e.g. Cairo, Egypt">
+              </div>
+              <div class="form-field builder-span-2">
+                <label for="bSummary">Professional summary <span>Optional</span></label>
+                <textarea id="bSummary" rows="4" placeholder="2–3 sentences highlighting your core expertise, years of experience, and impact…"></textarea>
+              </div>
+            </div>
+          </div>
+
+          <div class="builder-pane" data-builder-pane="links" role="tabpanel" hidden>
+            <div class="builder-grid">
+              <div class="form-field builder-span-2">
+                <label for="bLinkedin">LinkedIn URL or username <span>Optional</span></label>
+                <input type="text" id="bLinkedin" inputmode="url" placeholder="e.g. linkedin.com/in/username">
+              </div>
+              <div class="form-field">
+                <label for="bGithub">GitHub URL or username <span>Optional</span></label>
+                <input type="text" id="bGithub" inputmode="url" placeholder="e.g. github.com/username">
+              </div>
+              <div class="form-field">
+                <label for="bPortfolio">Portfolio / Website <span>Optional</span></label>
+                <input type="text" id="bPortfolio" inputmode="url" placeholder="e.g. yourname.dev">
+              </div>
+            </div>
+            <div class="builder-subsection">
+              <p class="builder-subsection__label">Other profiles &amp; links</p>
+              <div id="bLinksList" class="builder-list"></div>
+              <button type="button" class="tool-btn builder-add-btn" id="bAddLinkBtn">+ Add link (Behance, Kaggle, Scholar…)</button>
+            </div>
+          </div>
+
+          <div class="builder-pane" data-builder-pane="experience" role="tabpanel" hidden>
+            <div id="bExperienceList" class="builder-list"></div>
+            <button type="button" class="tool-btn builder-add-btn" id="bAddExperienceBtn">+ Add work experience</button>
+          </div>
+
+          <div class="builder-pane" data-builder-pane="education" role="tabpanel" hidden>
+            <div class="builder-subsection">
+              <p class="builder-subsection__label">Education</p>
+              <div id="bEducationList" class="builder-list"></div>
+              <button type="button" class="tool-btn builder-add-btn" id="bAddEducationBtn">+ Add education</button>
+            </div>
+            <div class="builder-subsection">
+              <p class="builder-subsection__label">Projects</p>
+              <div id="bProjectsList" class="builder-list"></div>
+              <button type="button" class="tool-btn builder-add-btn" id="bAddProjectBtn">+ Add project</button>
+            </div>
+          </div>
+
+          <div class="builder-pane" data-builder-pane="skills" role="tabpanel" hidden>
+            <div class="builder-subsection">
+              <p class="builder-subsection__label">Skill groups</p>
+              <div id="bSkillsList" class="builder-list"></div>
+              <button type="button" class="tool-btn builder-add-btn" id="bAddSkillBtn">+ Add skill category</button>
+            </div>
+            <div class="builder-grid builder-extras">
+              <div class="form-field builder-span-2">
+                <label for="bCertifications">Certifications (one per line) <span>Optional</span></label>
+                <textarea id="bCertifications" rows="2" placeholder="e.g. AWS Certified Solutions Architect (2025)"></textarea>
+              </div>
+              <div class="form-field builder-span-2">
+                <label for="bAwards">Awards &amp; Honors (one per line) <span>Optional</span></label>
+                <textarea id="bAwards" rows="2" placeholder="e.g. First Place, National AI Hackathon (2024)"></textarea>
+              </div>
+              <div class="form-field builder-span-2">
+                <label for="bPublications">Publications (one per line) <span>Optional</span></label>
+                <textarea id="bPublications" rows="2" placeholder="e.g. Author, Paper Title, Conference / Journal (Year)"></textarea>
+              </div>
+            </div>
+          </div>
+
+          <div class="builder-pane-nav">
+            <button type="button" class="tool-btn" id="builderPrevTabBtn" hidden>Previous section</button>
+            <span class="builder-pane-nav__spacer"></span>
+            <button type="button" class="tool-btn" id="builderNextTabBtn">Next section</button>
+          </div>
+        </div>
+
+        <aside class="builder-preview" aria-label="Live resume preview">
+          <div class="builder-preview__bar">
+            <span class="builder-preview__label">Live A4 Preview</span>
+            <div class="builder-layout-pills" role="group" aria-label="Preview layout">
+              <button type="button" class="is-active" data-builder-layout="chronological" aria-pressed="true">Career</button>
+              <button type="button" data-builder-layout="hybrid" aria-pressed="false">Skills</button>
+              <button type="button" data-builder-layout="technical" aria-pressed="false">Portfolio</button>
+              <button type="button" data-builder-layout="academic" aria-pressed="false">Academic</button>
+            </div>
+          </div>
+          <div class="builder-preview__stage" id="builderPreviewStage">
+            <div class="builder-preview__sheet" id="builderPreviewSheet">
+              <div id="builderPreviewPaper" class="resume-paper template-executive layout-chronological"></div>
+            </div>
+          </div>
+        </aside>
+      </div>
     </div>
 
 

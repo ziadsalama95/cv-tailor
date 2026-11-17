@@ -1,6 +1,6 @@
 // app.js - CV Tailor AI 2.0 Executive Engine & Smooth Progress Controller
 import { createLiveResume } from "./live-resume.js";
-import { getActiveExample } from "./demo-profiles.js";
+import { initCvBuilder } from "./cv-builder.js";
 
 const el = (id) => document.getElementById(id);
 
@@ -192,6 +192,7 @@ initScrollReveal();
 
 // Element References
 const viewInput = el("viewInput");
+const viewBuilder = el("viewBuilder");
 const viewProcessing = el("viewProcessing");
 const viewWorkbench = el("viewWorkbench");
 const siteTopbar = el("siteTopbar");
@@ -405,7 +406,7 @@ if (window.PDF_BRAND_FONTS_VFS && window.FontFace) {
   Promise.allSettled(faces).then(() => scheduleLayoutRealPages());
 }
 
-const VIEW_ELS = { viewInput, viewProcessing, viewWorkbench };
+const VIEW_ELS = { viewInput, viewBuilder, viewProcessing, viewWorkbench };
 function showView(viewId) {
   const next = VIEW_ELS[viewId];
   if (!next) return;
@@ -420,8 +421,8 @@ function showView(viewId) {
     document.body.classList.toggle("no-header", !!(siteTopbar && siteTopbar.hidden));
     document.body.classList.toggle("on-workbench", viewId === "viewWorkbench");
     const skipLink = document.querySelector(".skip-link");
-    skipLink.href = viewId === "viewWorkbench" ? "#cvDocumentPaper" : viewId === "viewProcessing" ? "#processingMainHeading" : "#tailorWorkspace";
-    skipLink.textContent = viewId === "viewWorkbench" ? "Skip to resume editor" : viewId === "viewProcessing" ? "Skip to processing status" : "Skip to resume workspace";
+    skipLink.href = viewId === "viewWorkbench" ? "#cvDocumentPaper" : viewId === "viewProcessing" ? "#processingMainHeading" : viewId === "viewBuilder" ? "#builderHeading" : "#tailorWorkspace";
+    skipLink.textContent = viewId === "viewWorkbench" ? "Skip to resume editor" : viewId === "viewProcessing" ? "Skip to processing status" : viewId === "viewBuilder" ? "Skip to CV builder" : "Skip to resume workspace";
     syncHeaderHeight();
     void next.offsetWidth;
     next.setAttribute("data-transition", "enter");
@@ -432,6 +433,7 @@ function showView(viewId) {
       focusTarget.focus({ preventScroll: true });
     }
     if (viewId === "viewWorkbench") requestAnimationFrame(() => fitToView());
+    if (viewId === "viewBuilder") requestAnimationFrame(() => cvBuilder?.fitPreview());
   };
 
   // Switch immediately so cancellation cannot race a delayed outgoing animation.
@@ -3399,18 +3401,77 @@ function setReviewContext(example) {
     : [jobTitle.value.trim(), jobCompany.value.trim()].filter(Boolean).join(" at ") || "Click anywhere on the page to edit before downloading.";
 }
 
-el("previewExampleBtn").addEventListener("click", () => {
-  if (isTailoring || isProcessingFile) return;
-  const example = getActiveExample();
-  layoutRecommendation = { key: example.layout?.recommended || "chronological", reason: "A clear overview of your experience." };
-  renderExecutiveResume(example, DEFAULT_TEMPLATE, layoutRecommendation ? layoutRecommendation.key : activeLayout);
-  originalCvData = JSON.parse(JSON.stringify(example));
-  originalTemplate = DEFAULT_TEMPLATE;
-  resetEditStatus();
-  setReviewContext(true);
-  hideWorkbenchError();
-  showView("viewWorkbench");
+const cvBuilder = initCvBuilder({
+  renderResume: buildResumeInnerHtml,
+  confirmDialog,
+  showToast,
+  onBack: () => showView("viewInput"),
+  onFinish: (data, plainText) => {
+    resetExtractedLinks();
+    if (data.contact?.linkedin) recordExtractedLink(data.contact.linkedin, data.contact.linkedin);
+    if (data.contact?.github) recordExtractedLink(data.contact.github, data.contact.github);
+    if (data.contact?.portfolio) recordExtractedLink(data.contact.portfolio, data.contact.portfolio);
+    for (const l of data.links || []) recordExtractedLink(l.label || l.url, l.url);
+
+    activeRequestId = crypto.randomUUID();
+    uploadedFileName = `${data.name}_Resume.pdf`;
+    layoutRecommendation = {
+      key: data.layout?.recommended || "chronological",
+      reason: "Selected in CV Builder.",
+    };
+    renderExecutiveResume(data, DEFAULT_TEMPLATE, layoutRecommendation.key);
+    originalCvData = JSON.parse(JSON.stringify(data));
+    originalTemplate = DEFAULT_TEMPLATE;
+    resetEditStatus();
+    setReviewContext(false);
+    hideWorkbenchError();
+    showView("viewWorkbench");
+
+    fetch("/api/prepare", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        sessionId: getOrCreateSessionId(),
+        requestId: activeRequestId,
+        cvText: plainText,
+        jobTitle: data.title || "Built CV",
+        intensity: "builder",
+        ...currentVisitorContext(),
+      }),
+    }).catch(() => {});
+  },
+  onTailor: (data, plainText) => {
+    resetExtractedLinks();
+    if (data.contact?.linkedin) recordExtractedLink(data.contact.linkedin, data.contact.linkedin);
+    if (data.contact?.github) recordExtractedLink(data.contact.github, data.contact.github);
+    if (data.contact?.portfolio) recordExtractedLink(data.contact.portfolio, data.contact.portfolio);
+    for (const l of data.links || []) recordExtractedLink(l.label || l.url, l.url);
+
+    cvType = "text";
+    cvImages = [];
+    cvPagesData = [];
+    uploadedFileName = `${data.name.replace(/\s+/g, "_")}_Built_CV.txt`;
+    uploadedFileBase64 = null;
+    uploadedFileMime = "text/plain";
+    cvText.value = plainText;
+    showFileInfo(`${data.name} (Built CV)`, describeLinksFound("Built resume ready"));
+    showView("viewInput");
+    requestAnimationFrame(() => {
+      jobTitle?.scrollIntoView({ behavior: "smooth", block: "center" });
+      jobTitle?.focus({ preventScroll: true });
+    });
+    showToast("Your built CV is loaded. Add the target job details and click Tailor.");
+  },
 });
+
+function openCvBuilder() {
+  if (isTailoring || isProcessingFile) return;
+  cvBuilder?.open();
+  showView("viewBuilder");
+}
+
+el("previewExampleBtn")?.addEventListener("click", openCvBuilder);
+el("sourceBuild")?.addEventListener("click", openCvBuilder);
 
 // Browser-native protection covers refresh/close as well as internal navigation.
 window.addEventListener("beforeunload", (event) => {
