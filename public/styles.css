@@ -2003,8 +2003,9 @@ html[data-theme="dark"] .footer__credit a { color: #78b4ff; }
 
   .workbench-toolbar { padding: 12px 16px; }
   .editor-tools { width: 100%; }
-  .workbench-actions { width: 100%; }
-  .workbench-actions .btn--cta { flex: 1; justify-content: center; }
+  .workbench-actions { width: 100%; flex-wrap: wrap; }
+  .workbench-actions .btn--cta { flex: 1 1 100%; justify-content: center; }
+  .workbench-actions .tool-btn { flex: 1 1 auto; justify-content: center; }
   .canvas-statusbar { padding: 8px 16px; flex-wrap: wrap; }
 
   .resume-paper { padding: 18px 14px; }
