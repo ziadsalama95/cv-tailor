@@ -218,34 +218,6 @@ const processingMainHeading = el("processingMainHeading");
 const processingStatusText = el("processingStatusText");
 const btnCancelTailoring = el("btnCancelTailoring");
 
-const stageCvScan = el("stageCvScan");
-const scanningPagesContainer = el("scanningPagesContainer");
-const scanChecklist = el("scanChecklist");
-const scanChecklistItems = scanChecklist ? Array.from(scanChecklist.querySelectorAll(".scan-checklist__item")) : [];
-
-const stageJobAnalysis = el("stageJobAnalysis");
-const procJobTitleDisplay = el("procJobTitleDisplay");
-const procJobCompanyDisplay = el("procJobCompanyDisplay");
-const procJobLocationDisplay = el("procJobLocationDisplay");
-const procJobDescSnippet = el("procJobDescSnippet");
-const jobUnderstandingStream = el("jobUnderstandingStream");
-const jobUnderstandingStreamDefaultHtml = jobUnderstandingStream ? jobUnderstandingStream.innerHTML : "";
-
-const stageDraftAssembly = el("stageDraftAssembly");
-const assemblyLivePreview = el("assemblyLivePreview");
-
-const stageStepper = el("stageStepper");
-const stepEls = {
-  A: stageStepper.querySelector('.stage-stepper__step[data-step="A"]'),
-  B: stageStepper.querySelector('.stage-stepper__step[data-step="B"]'),
-  C: stageStepper.querySelector('.stage-stepper__step[data-step="C"]'),
-};
-const connectorEls = {
-  AB: stageStepper.querySelector('[data-connector="A-B"]'),
-  BC: stageStepper.querySelector('[data-connector="B-C"]'),
-};
-const STAGE_ORDER = ["A", "B", "C"];
-
 // Workbench References
 const cvDocumentPaper = el("cvDocumentPaper");
 const paperCanvas = el("paperCanvas");
@@ -340,22 +312,6 @@ let pdfFontsReady = false;
 
 let extractedCvLinks = []; // [{ text, url }]
 
-let activeScanPageIdx = 0;
-let scanCarouselTimer = null;
-let currentStage = null;
-let pendingJdScanText = "";
-
-let scheduledStageTransition = null;
-
-let scanChecklistTimer = null;
-let stageAWatchdogTimer = null;
-let stageAStartedAt = 0;
-let stageCWatchdogTimer = null;
-let stageCStartedAt = 0;
-let liveStatusTimer = null;
-let liveStatusStartedAt = 0;
-let liveStatusCharCount = 0;
-
 let originalCvData = null;
 let originalTemplate = DEFAULT_TEMPLATE;
 let activeLayout = (window.CvLayouts && window.CvLayouts.DEFAULT_LAYOUT) || "chronological";
@@ -431,22 +387,6 @@ if (window.PDF_BRAND_FONTS_VFS && window.FontFace) {
   Promise.allSettled(faces).then(() => scheduleLayoutRealPages());
 }
 
-function startLiveStatus() {
-  liveStatusStartedAt = Date.now();
-  liveStatusCharCount = 0;
-}
-
-function reportLiveStatusChars(totalChars) {
-  liveStatusCharCount = totalChars;
-}
-
-function stopLiveStatus() {
-  if (liveStatusTimer) {
-    clearInterval(liveStatusTimer);
-    liveStatusTimer = null;
-  }
-}
-
 const VIEW_ELS = { viewInput, viewProcessing, viewWorkbench };
 function showView(viewId) {
   const next = VIEW_ELS[viewId];
@@ -506,15 +446,6 @@ async function goToMainPage() {
   }
   if (activeTailorController) activeTailorController.abort();
   stopMeasuredProgress();
-  if (scanCarouselTimer) clearInterval(scanCarouselTimer);
-  if (scanChecklistTimer) clearInterval(scanChecklistTimer);
-  if (scheduledStageTransition) {
-    clearTimeout(scheduledStageTransition.timer);
-    scheduledStageTransition = null;
-  }
-  stopStageAWatchdog();
-  stopStageCWatchdog();
-  stopLiveStatus();
   showView("viewInput");
 }
 
@@ -890,7 +821,6 @@ function showFileInfo(name, statusText) {
 }
 
 function removeFile() {
-  if (scanCarouselTimer) clearInterval(scanCarouselTimer);
   cvFile.value = "";
   cvText.value = "";
   cvImages = [];
@@ -1110,7 +1040,6 @@ function hideSelectionToolbar() {
   selectionToolbar.hidden = true;
 }
 
-let lastSelectionRect = null;
 document.addEventListener("selectionchange", () => {
   if (linkPopoverOpen) return; // the popover owns the floating UI while open
   if (selectionToolbar.contains(document.activeElement)) return;
@@ -1142,7 +1071,6 @@ document.addEventListener("selectionchange", () => {
     hideSelectionToolbar();
     return;
   }
-  lastSelectionRect = rect;
   showSelectionToolbar(rect);
 });
 window.addEventListener(
@@ -1390,12 +1318,16 @@ btnReset.addEventListener("click", async () => {
     selectedFontVariant[template] = DEFAULT_FONT_VARIANT[template];
     applyFontVariantToCss(template, DEFAULT_FONT_VARIANT[template]);
   });
+  hideWorkbenchError();
+  hideIconChip();
+  hideIconPopover();
+  hideLayoutPopover();
+  hidePlaceholderPopover();
   resetEditStatus();
-  applyZoom(1);
+  fitToView();
   showToast("Reset to your original draft.");
 });
 
-let editStatusTimer = null;
 function markEdited() {
   if (!editStatusText) return;
   if (cvDocumentPaper.innerHTML === initialDocumentHtml) {
@@ -1404,13 +1336,11 @@ function markEdited() {
   }
   editStatusDot.classList.add("is-edited");
   editStatusText.textContent = "Edited — download to save your changes";
-  clearTimeout(editStatusTimer);
 }
 function resetEditStatus() {
   if (!editStatusText) return;
   editStatusDot.classList.remove("is-edited");
   editStatusText.textContent = "No edits yet";
-  clearTimeout(editStatusTimer);
 }
 cvDocumentPaper.addEventListener("input", markEdited);
 cvDocumentPaper.addEventListener("input", scheduleHistoryCommit);
@@ -1659,6 +1589,7 @@ if (iconChip) {
 function hideIconPopover() {
   iconPopoverTarget = null;
   if (iconPopover) iconPopover.hidden = true;
+  if (btnToggleIcons) btnToggleIcons.setAttribute("aria-expanded", "false");
 }
 
 function openIconMenu(anchorRect, item) {
@@ -1671,6 +1602,7 @@ function openIconMenu(anchorRect, item) {
   el("iconPopoverRemove").hidden = !iconEl;
   el("iconPopoverHideAll").textContent = iconsHidden() ? "Show all icons" : "Hide all icons";
   iconPopover.hidden = false;
+  if (btnToggleIcons && !item) btnToggleIcons.setAttribute("aria-expanded", "true");
   const margin = 8;
   iconPopover.style.left = `${Math.min(window.innerWidth - iconPopover.offsetWidth - margin, Math.max(margin, anchorRect.left - 6))}px`;
   const below = anchorRect.bottom + 8;
@@ -1794,7 +1726,8 @@ function applyLayout(key, { record = true } = {}) {
     if (node) cvDocumentPaper.querySelector(selector)?.replaceWith(node);
   }
   cvDocumentPaper.append(...caches);
-  cvDocumentPaper.querySelector(".cv-header").dataset.layout = layout.key;
+  const headerEl = cvDocumentPaper.querySelector(".cv-header");
+  if (headerEl) headerEl.dataset.layout = layout.key;
   activeLayout = layout.key;
   restoreLayoutIdentity();
   if (record) { markEdited(); commitHistory(); }
@@ -2024,9 +1957,9 @@ document.addEventListener("keydown", (event) => {
 
 function linkOrSpan(href, text, { clickable = true, target, title } = {}) {
   const attrs = [`class="cv-link"`];
-  if (title) attrs.push(`title="${title}"`);
+  if (title) attrs.push(`title="${escapeHtml(title)}"`);
   if (!clickable) return `<span ${attrs.join(" ")}>${text}</span>`;
-  attrs.push(`href="${href}"`);
+  attrs.push(`href="${escapeHtml(href)}"`);
   if (target) attrs.push(`target="_blank" rel="noopener"`);
   return `<a ${attrs.join(" ")}>${text}</a>`;
 }
@@ -2084,11 +2017,11 @@ const EXTRA_LINK_URL_MAX = 48;
 function formatExtraLink(link, clickable = true) {
   if (!link || !link.url) return "";
   const label = link.label ? link.label.trim() : "";
-  let url = link.url.trim();
-  if (!/^https?:\/\//i.test(url)) url = `https://${url.replace(/^\/+/, "")}`;
+  const url = normalizeLinkUrl(link.url);
+  if (!url) return escapeHtml(label || link.url);
   const bare = displayUrl(url);
   const text = label && bare.length > EXTRA_LINK_URL_MAX ? label : bare;
-  return withIcon(iconFor(url), linkOrSpan(url, escapeHtml(text), { clickable, target: true, title: escapeHtml(label || url) }));
+  return withIcon(iconFor(url), linkOrSpan(url, escapeHtml(text), { clickable, target: true, title: label || url }));
 }
 
 const PLACEHOLDER_PATTERN = /\[[^\[\]\n]+\]/g;
@@ -2140,7 +2073,7 @@ function escapeAndAutoLink(text, clickable = true) {
   const after = raw.slice(idx + match.text.length);
   return (
     escapeHtml(before) +
-    linkOrSpan(escapeHtml(url), escapeHtml(matchedOriginal), { clickable, target: true, title: escapeHtml(url) }) +
+    linkOrSpan(url, escapeHtml(matchedOriginal), { clickable, target: true, title: url }) +
     escapeHtml(after)
   );
 }
@@ -2868,134 +2801,14 @@ function escapeHtml(str) {
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
-}
-
-function goToStage(stage, headingText, statusSubText) {
-  currentStage = stage;
-  processingMainHeading.textContent = headingText || "Tailoring your resume";
-  processingStatusText.textContent = statusSubText || "";
-}
-
-function resetScanChecklist() {
-  scanChecklistItems.forEach((item) => item.classList.remove("is-done", "is-active"));
-}
-
-function stopStageAWatchdog() {
-  if (stageAWatchdogTimer) {
-    clearInterval(stageAWatchdogTimer);
-    stageAWatchdogTimer = null;
-  }
-}
-
-function stopStageCWatchdog() {
-  if (stageCWatchdogTimer) {
-    clearInterval(stageCWatchdogTimer);
-    stageCWatchdogTimer = null;
-  }
-}
-
-function updateRoleAnalysisLive(data) {
-  if (!data) return;
-  let html = "";
-  if (data.title) {
-    html += `<div class="live-preview-headline">${escapeHtml(data.title)}</div>`;
-  }
-  if (data.summary) {
-    html += `<p class="live-preview-summary">${escapeHtml(data.summary)}<span class="typing-caret" aria-hidden="true"></span></p>`;
-  }
-  if (Array.isArray(data.skills) && data.skills.length) {
-    const flatSkills = data.skills
-      .flatMap((s) => (s && Array.isArray(s.items) ? s.items : []))
-      .filter(Boolean)
-      .slice(0, 16);
-    if (flatSkills.length) {
-      html += `<div class="live-preview-skills-label">Key skills aligned to this role</div>`;
-      html += `<div class="live-field__chips">${flatSkills
-        .map((s) => `<span class="skill-chip">${escapeHtml(s)}</span>`)
-        .join("")}</div>`;
-    }
-  }
-  if (html) {
-    jobUnderstandingStream.innerHTML = html;
-    scrollStreamBoxToBottom(jobUnderstandingStream);
-  }
-}
-
-function scrollStreamBoxToBottom(container) {
-  if (!container) return;
-  requestAnimationFrame(() => {
-    container.scrollTop = container.scrollHeight;
-  });
-}
-
-function resetRoleAnalysisSkeleton() {
-  if (jobUnderstandingStream) {
-    jobUnderstandingStream.innerHTML = jobUnderstandingStreamDefaultHtml;
-    jobUnderstandingStream.scrollTop = 0;
-  }
-}
-
-function populateJobSummaryCard({ title, company, location, jd }) {
-  if (procJobTitleDisplay) {
-    if (title) {
-      procJobTitleDisplay.textContent = title;
-      procJobTitleDisplay.hidden = false;
-    } else {
-      procJobTitleDisplay.hidden = true;
-    }
-  }
-  if (procJobCompanyDisplay) {
-    if (company) {
-      procJobCompanyDisplay.textContent = company;
-      procJobCompanyDisplay.hidden = false;
-    } else {
-      procJobCompanyDisplay.hidden = true;
-    }
-  }
-  if (procJobLocationDisplay) {
-    if (location) {
-      procJobLocationDisplay.textContent = `📍 ${location}`;
-      procJobLocationDisplay.hidden = false;
-    } else {
-      procJobLocationDisplay.hidden = true;
-    }
-  }
-
-  pendingJdScanText = jd || "";
-}
-
-function startJdScanLoop(node, text) {
-  if (!node) return;
-  node.style.animation = "none";
-
-  const clean = (text || "").trim();
-  if (!clean) {
-    node.innerHTML = "";
-    return;
-  }
-
-  const safe = escapeHtml(clean);
-  node.innerHTML =
-    `<div class="jd-scan-track__copy">${safe}</div>` +
-    `<div class="jd-scan-track__copy" aria-hidden="true">${safe}</div>`;
-
-  requestAnimationFrame(() => {
-    const copies = node.querySelectorAll(".jd-scan-track__copy");
-    const distance = copies[1] ? copies[1].offsetTop : node.scrollHeight;
-    const PX_PER_SECOND = 22;
-    const duration = Math.max(12, Math.min(60, distance / PX_PER_SECOND));
-    node.style.setProperty("--jd-scroll-distance", `${distance}px`);
-    node.style.setProperty("--jd-scroll-duration", `${duration.toFixed(1)}s`);
-    node.style.animation = "";
-  });
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }
 
 let activeRequestId = null;
 let measuredTimer = null;
 let measuredStartedAt = 0;
 let lastProgressAt = 0;
-let lastDraftRenderAt = 0;
 const liveResume = createLiveResume(buildResumeInnerHtml);
 let draftFrame = null;
 let pendingDraftRaw = "";
@@ -3132,7 +2945,6 @@ const scanProgress = (() => {
 function startMeasuredProgress() {
   clearInterval(measuredTimer);
   measuredStartedAt = lastProgressAt = Date.now();
-  lastDraftRenderAt = 0;
   el("progressElapsed").textContent = "0:00";
   liveResume.start({ pages: cvPagesData, text: cvText.value });
   el("progressRole").textContent = [jobTitle.value.trim(), jobCompany?.value.trim()].filter(Boolean).join(" · ");
@@ -3235,11 +3047,11 @@ async function streamTailorResponse(requestBody, controller) {
     if (done) break;
     buffer += decoder.decode(value, { stream: true });
 
-    const events = buffer.split("\n\n");
+    const events = buffer.split(/\r?\n\r?\n/);
     buffer = events.pop();
 
     for (const evt of events) {
-      const lines = evt.split("\n");
+      const lines = evt.split(/\r?\n/);
       let eventType = "message";
       let data = "";
       for (const line of lines) {
@@ -3334,17 +3146,10 @@ tailorBtn.addEventListener("click", async () => {
   el("workspaceError").hidden = true;
   setTailorBtnBusy(true, "Tailoring…");
 
-  populateJobSummaryCard({ title, company, location, jd });
   showView("viewProcessing");
-  currentStage = null; // force the very first goToStage("A", ...) call to run
-  startLiveStatus();
-
-  goToStage("A", "Your next chapter, taking shape.", "Opening your resume…");
-  resetScanChecklist();
+  processingMainHeading.textContent = "Your next chapter, taking shape.";
+  processingStatusText.textContent = "Opening your resume…";
   startMeasuredProgress();
-
-  resetRoleAnalysisSkeleton();
-  assemblyLivePreview.innerHTML = '<div class="assembly-placeholder">Your tailored resume is taking shape.</div>';
 
   activeRequestId = crypto.randomUUID();
   const body = {
@@ -3399,9 +3204,6 @@ tailorBtn.addEventListener("click", async () => {
       const retryBody = { ...body, ...lighter, requestId: crypto.randomUUID() };
       activeRequestId = retryBody.requestId;
 
-      resetRoleAnalysisSkeleton();
-      assemblyLivePreview.innerHTML = '<div class="assembly-placeholder">Your tailored resume is taking shape.</div>';
-      currentStage = null; // force goToStage below to actually run the transition
       reportClientActivity("tailoring_retry", new Error(`Incomplete first pass (${finishReason || "no finish reason"})`), { attempt: 1 });
       liveResume.start({ pages: cvPagesData, text: cvText.value });
       setMeasuredPhase("accepted");
@@ -3419,16 +3221,8 @@ tailorBtn.addEventListener("click", async () => {
 
     const finishedShort = incomplete();
 
-    if (currentStage !== "C") {
-      goToStage("C", "Finalizing your tailored resume…", "Formatting the final draft");
-    } else {
-      processingMainHeading.textContent = "Finalizing your tailored resume…";
-      processingStatusText.textContent = "Formatting the final draft";
-    }
-    updateRoleAnalysisLive(finalData);
-    renderIntoContainer(finalData, assemblyLivePreview);
-    stopStageCWatchdog();
-    stopLiveStatus("Done — resume ready.");
+    processingMainHeading.textContent = "Finalizing your tailored resume…";
+    processingStatusText.textContent = "Formatting the final draft";
     stopMeasuredProgress();
     controller.signal.throwIfAborted();
 
@@ -3441,23 +3235,13 @@ tailorBtn.addEventListener("click", async () => {
     originalTemplate = DEFAULT_TEMPLATE;
     resetEditStatus();
 
-    if (scanCarouselTimer) clearInterval(scanCarouselTimer);
     showView("viewWorkbench");
-    requestAnimationFrame(() => applyZoom(1));
+    requestAnimationFrame(() => fitToView());
     reportClientActivity("review_ready");
     showToast(finishedShort
       ? "Your draft is incomplete. Review it and add any missing details before downloading."
       : "Your resume is ready to review.");
   } catch (err) {
-    if (scanCarouselTimer) clearInterval(scanCarouselTimer);
-    if (scanChecklistTimer) clearInterval(scanChecklistTimer);
-    if (scheduledStageTransition) {
-      clearTimeout(scheduledStageTransition.timer);
-      scheduledStageTransition = null;
-    }
-    stopStageAWatchdog();
-    stopStageCWatchdog();
-    stopLiveStatus();
     showView("viewInput");
     if (err.name === "AbortError") {
       showToast("Cancelled — your résumé and job details are still here.");
@@ -3476,14 +3260,6 @@ tailorBtn.addEventListener("click", async () => {
   }
 }
 );
-
-function renderIntoContainer(data, container) {
-  const previewLayout = data && data.layout && (data.layout.recommended || data.layout);
-  container.innerHTML = buildResumeInnerHtml(data, {
-    linksClickable: false,
-    layout: (window.CvLayouts && window.CvLayouts.LAYOUTS[previewLayout]) ? previewLayout : activeLayout,
-  });
-}
 
 // Hero / marketing-section wiring (scroll-to-form CTAs)
 (function initHeroCtas() {

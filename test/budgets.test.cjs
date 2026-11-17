@@ -44,11 +44,10 @@ test('an absurd max_tokens request is clamped to what can arrive in time', () =>
   assert.ok(maxDurationMs <= REQUEST_CEILING_MS);
 });
 
-test('model defaults to nvidia/nemotron-3.5-super-vl-120b-a12b and ignores retired kimi-k3', () => {
+test('model is fixed to nvidia/nemotron-3.5-super-vl-120b-a12b', () => {
   assert.equal(MODEL, 'nvidia/nemotron-3.5-super-vl-120b-a12b');
   assert.equal(resolveModel(undefined), MODEL);
-  assert.equal(resolveModel('moonshotai/kimi-k3'), MODEL);
-  assert.equal(resolveModel('nvidia/nemotron-3.5-bolt-e4b'), 'nvidia/nemotron-3.5-bolt-e4b');
+  assert.equal(resolveModel('other/model'), MODEL);
 });
 
 test('reasoning effort defaults to none so Nemotron 3.5 Super VL streams immediately', () => {

@@ -40,6 +40,17 @@ npm start
 
 Then open `http://localhost:3000`.
 
+## Deploy to Cloudflare Workers
+
+This project supports Cloudflare Workers with Static Assets via `wrangler.jsonc` and `worker.mjs`:
+
+```bash
+npx wrangler secret put NVIDIA_API_KEY
+npx wrangler deploy
+```
+
+For local Cloudflare emulation, put `NVIDIA_API_KEY=...` in `.dev.vars` and run `npm run cf:dev`.
+
 ## Scripts
 
 ```bash
@@ -54,9 +65,13 @@ npm run build:icons           # Rebuild SVGs, icon registry, and PDF icon font (
 ## Structure
 
 ```text
-server.js             Express server, prompts, duration/token budgets, API routes
+server.js             Express server for Node.js / Vercel
+worker.mjs            Cloudflare Workers entrypoint (fetch handler)
+wrangler.jsonc        Cloudflare Workers + Static Assets config
 vercel.json           Vercel serverless config (300s maxDuration)
 lib/
+  model.js            Active AI model config and NVIDIA NIM request helper
+  prompts.js          System/user prompts, budgets, and request validation
   tailor-stream.js    SSE streaming, key rotation, NVCF 202 polling, draft salvage
   activity.js         Structured activity logger with secret redaction
 public/

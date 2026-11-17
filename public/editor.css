@@ -4,7 +4,6 @@ body.no-header { overflow-x: clip; overflow-y: visible; }
 body.no-header .desk { perspective: none; }
 #viewProcessing { will-change: auto; }
 .skip-link:not(:focus) { clip-path: inset(50%); width: 1px; height: 1px; padding: 0; overflow: hidden; }
-#viewProcessing .stage-stepper, #viewProcessing .processing-stage-container { display: none; }
 .live-workspace { display: grid; grid-template-columns: 1fr 1fr; border: 1px solid var(--panel-border); border-radius: 18px; background: var(--panel-bg); overflow: hidden; margin: 24px 0 48px; }
 .live-workspace__activity { padding: 36px; }
 .live-workspace h3 { font-size: 21px; line-height: 1.5; overflow-wrap: anywhere; margin: 12px 0 28px; }

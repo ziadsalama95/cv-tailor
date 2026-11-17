@@ -248,32 +248,6 @@
             Cancel
           </button>
         </div>
-
-        <div class="stage-stepper" id="stageStepper">
-          <div class="stage-stepper__step" data-step="A">
-            <div class="stage-stepper__dot">
-              <span class="stage-stepper__num">1</span>
-              <svg class="stage-stepper__check" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="3"><path d="M4 12l5 5L20 6"/></svg>
-            </div>
-            <div class="stage-stepper__label">Scan Resume</div>
-          </div>
-          <div class="stage-stepper__connector" data-connector="A-B"></div>
-          <div class="stage-stepper__step" data-step="B">
-            <div class="stage-stepper__dot">
-              <span class="stage-stepper__num">2</span>
-              <svg class="stage-stepper__check" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="3"><path d="M4 12l5 5L20 6"/></svg>
-            </div>
-            <div class="stage-stepper__label">Analyze Fit</div>
-          </div>
-          <div class="stage-stepper__connector" data-connector="B-C"></div>
-          <div class="stage-stepper__step" data-step="C">
-            <div class="stage-stepper__dot">
-              <span class="stage-stepper__num">3</span>
-              <svg class="stage-stepper__check" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="3"><path d="M4 12l5 5L20 6"/></svg>
-            </div>
-            <div class="stage-stepper__label">Draft Resume</div>
-          </div>
-        </div>
       </div>
 
       <section class="live-workspace" aria-label="Tailoring progress">
@@ -310,100 +284,6 @@
           </div>
         </div>
       </section>
-      <!-- Legacy preview containers retained for file-reading compatibility. -->
-      <div class="processing-stage-container">
-
-        <!-- STAGE A: RESUME SCAN -->
-        <div id="stageCvScan" class="stage-view glass-card">
-          <div class="stage-view__header">
-            <h3>Reading Your Resume</h3>
-          </div>
-
-          <div class="scan-layout">
-            <div class="scan-thumb-panel">
-              <div id="scanningPagesContainer" class="single-page-scan-viewport">
-                <!-- Rendered page thumbnail -->
-              </div>
-            </div>
-
-            <div class="scan-checklist-panel">
-              <ul id="scanChecklist" class="scan-checklist">
-                <li class="scan-checklist__item" data-item="0">
-                  <span class="scan-checklist__marker"><svg class="scan-checklist__check" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="3.5"><path d="M4 12l5 5L20 6"/></svg></span>
-                  <span class="scan-checklist__text">Reading contact details &amp; links</span>
-                </li>
-                <li class="scan-checklist__item" data-item="1">
-                  <span class="scan-checklist__marker"><svg class="scan-checklist__check" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="3.5"><path d="M4 12l5 5L20 6"/></svg></span>
-                  <span class="scan-checklist__text">Mapping work history &amp; achievements</span>
-                </li>
-                <li class="scan-checklist__item" data-item="2">
-                  <span class="scan-checklist__marker"><svg class="scan-checklist__check" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="3.5"><path d="M4 12l5 5L20 6"/></svg></span>
-                  <span class="scan-checklist__text">Identifying core skills</span>
-                </li>
-                <li class="scan-checklist__item" data-item="3">
-                  <span class="scan-checklist__marker"><svg class="scan-checklist__check" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="3.5"><path d="M4 12l5 5L20 6"/></svg></span>
-                  <span class="scan-checklist__text">Comparing against job requirements</span>
-                </li>
-              </ul>
-            </div>
-          </div>
-        </div>
-
-        <!-- STAGE B: ROLE ANALYSIS & COMPETENCY ALIGNMENT -->
-        <div id="stageJobAnalysis" class="stage-view glass-card" hidden>
-          <div class="stage-view__header">
-            <h3>Your experience and the role</h3>
-          </div>
-          
-          <div class="job-analysis-grid">
-            <div class="job-summary-card">
-              <div class="job-summary-card__title" id="procJobTitleDisplay" hidden></div>
-              <div class="job-summary-card__company" id="procJobCompanyDisplay" hidden></div>
-              <div class="job-summary-card__location" id="procJobLocationDisplay" hidden></div>
-              <div class="job-summary-card__body-label">Scanning job description</div>
-              <div class="job-summary-card__body-viewport">
-                <div class="job-summary-card__body" id="procJobDescSnippet"></div>
-              </div>
-            </div>
-
-            <div class="ai-stream-card">
-              <div class="ai-stream-card__label">Your professional profile</div>
-              <div id="jobUnderstandingStream" class="ai-stream-box">
-                <div class="skeleton-field">
-                  <div class="skeleton-bar skeleton-bar--label"></div>
-                  <div class="skeleton-bar skeleton-bar--title"></div>
-                </div>
-                <div class="skeleton-field">
-                  <div class="skeleton-bar skeleton-bar--label"></div>
-                  <div class="skeleton-bar skeleton-bar--line"></div>
-                  <div class="skeleton-bar skeleton-bar--line skeleton-bar--short"></div>
-                </div>
-                <div class="skeleton-field">
-                  <div class="skeleton-bar skeleton-bar--label"></div>
-                  <div class="skeleton-chips">
-                    <div class="skeleton-chip"></div>
-                    <div class="skeleton-chip"></div>
-                    <div class="skeleton-chip"></div>
-                    <div class="skeleton-chip"></div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- STAGE C: DRAFT ASSEMBLY -->
-        <div id="stageDraftAssembly" class="stage-view glass-card" hidden>
-          <div class="stage-view__header">
-            <h3>Writing your resume</h3>
-          </div>
-          <div id="assemblyLivePreview" class="assembly-paper template-executive">
-            <div class="assembly-placeholder">Your tailored resume is taking shape.</div>
-          </div>
-        </div>
-
-      </div>
-
     </div>
 
 
@@ -445,12 +325,12 @@
               <span class="tool-btn__label">Copy text</span>
             </button>
 
-            <button type="button" class="tool-btn" id="btnLayout" title="Change which sections lead the résumé — the order recruiters read it in">
+            <button type="button" class="tool-btn" id="btnLayout" aria-haspopup="true" aria-expanded="false" title="Change which sections lead the résumé — the order recruiters read it in">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
-              <span class="tool-btn__label">Layout: <span id="btnLayoutLabel">Chronological</span></span>
+              <span class="tool-btn__label">Layout: <span id="btnLayoutLabel">Career</span></span>
             </button>
 
-            <button type="button" class="tool-btn" id="btnToggleIcons" aria-pressed="true" title="Show or hide the small platform marks beside your contact links">
+            <button type="button" class="tool-btn" id="btnToggleIcons" aria-haspopup="true" aria-expanded="false" aria-pressed="true" title="Show or hide the small platform marks beside your contact links">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M10 13a5 5 0 0 0 7.1 0l2.9-2.9a5 5 0 0 0-7.1-7.1L11.5 4.4"/><path d="M14 11a5 5 0 0 0-7.1 0L4 13.9a5 5 0 0 0 7.1 7.1l1.4-1.4"/></svg>
               <span class="tool-btn__label" id="btnToggleIconsLabel">Link icons</span>
             </button>

@@ -78,3 +78,11 @@ test('extractCvJsonSlice ignores trailing delimiters or markdown fences after ro
   assert.equal(parsed.name, 'Sara');
   assert.equal(parsed.experience[0].role, 'Engineer');
 });
+
+test('streamTailorResponse handles CRLF SSE delimiters from proxies', async () => {
+  const crlfChunk = new TextEncoder().encode('event: message\r\ndata: {"token":"hello"}\r\n\r\nevent: done\r\ndata: {"finishReason":"stop"}\r\n\r\n');
+  const result = await setup([crlfChunk]).run();
+  assert.equal(result.raw, 'hello');
+  assert.equal(result.finishReason, 'stop');
+  assert.equal(result.truncated, false);
+});

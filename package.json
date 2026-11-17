@@ -5,8 +5,10 @@
   "main": "server.js",
   "scripts": {
     "test": "node --test",
-    "check": "node --check server.js && node --check public/app.js && node --check public/cv-layouts.js && node --check public/cv-icons.js && node --check public/live-resume.js && node --check public/hero-lab.js && node --check public/demo-profiles.js",
+    "check": "node --check server.js && node --check worker.mjs && node --check lib/model.js && node --check lib/prompts.js && node --check lib/tailor-stream.js && node --check lib/activity.js && node --check public/app.js && node --check public/cv-layouts.js && node --check public/cv-icons.js && node --check public/live-resume.js && node --check public/hero-lab.js && node --check public/demo-profiles.js",
     "start": "node server.js",
+    "cf:dev": "wrangler dev",
+    "cf:deploy": "wrangler deploy",
     "build:icons": "node scripts/build-icons.cjs && python3 scripts/build-icon-font.py",
     "preview": "node scripts/preview.cjs"
   },

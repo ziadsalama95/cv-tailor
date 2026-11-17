@@ -168,12 +168,3 @@ input[type="text"], textarea { font-size: 13px; border-radius: 7px; padding: 11p
   .theme-toggle { width: 32px; height: 32px; flex: none; }
   .topbar__cta { font-size: 10px; padding: 10px; white-space: nowrap; }
 }
-@media (max-width: 400px) {
-  .topbar__inner { flex-wrap: nowrap; gap: 8px; }
-  .brand { gap: 6px; }
-  .brand__name { font-size: 16px; white-space: nowrap; }
-  .brand__icon { width: 25px; height: 25px; }
-  .topbar__nav { gap: 8px; }
-  .theme-toggle { width: 32px; height: 32px; flex: none; }
-  .topbar__cta { font-size: 10px; padding: 10px; white-space: nowrap; }
-}

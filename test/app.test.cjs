@@ -58,3 +58,17 @@ test('disabled activity logging endpoints safely accept local QA requests', asyn
     assert.ok(response.ok, endpoint);
   }
 });
+
+test('server disables x-powered-by and rejects malformed JSON with 400', async () => {
+  const res = await fetch(origin);
+  assert.equal(res.headers.get('x-powered-by'), null);
+
+  const badJson = await fetch(`${origin}/api/tailor`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: '{bad json',
+  });
+  assert.equal(badJson.status, 400);
+  const body = await badJson.json();
+  assert.match(body.error, /invalid/i);
+});

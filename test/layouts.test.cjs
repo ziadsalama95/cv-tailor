@@ -119,9 +119,9 @@ test('content adaptation keeps source facts intact and creates different version
 });
 
 test('the server prompt offers exactly the layouts the client can render', () => {
-  const server = fs.readFileSync(path.join(ROOT, 'server.js'), 'utf8');
+  const prompts = fs.readFileSync(path.join(ROOT, 'lib', 'prompts.js'), 'utf8');
   for (const key of CvLayouts.order) {
-    assert.ok(server.includes(`"${key}"`), `the prompt never mentions the ${key} layout`);
+    assert.ok(prompts.includes(`"${key}"`), `the prompt never mentions the ${key} layout`);
   }
-  assert.ok(server.includes('layout.reason'), 'the prompt must ask for a reason, not just a label');
+  assert.ok(prompts.includes('layout.reason'), 'the prompt must ask for a reason, not just a label');
 });
