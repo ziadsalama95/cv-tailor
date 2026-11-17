@@ -686,25 +686,6 @@ export function initCvBuilder({ renderResume, onFinish, onDownloadPdf, onTailor,
 
   document.getElementById("builderBackBtn")?.addEventListener("click", () => onBack?.());
 
-  document.getElementById("builderSampleBtn")?.addEventListener("click", async () => {
-    const hasContent = Boolean(cleanStr(state.name) || buildCvDataFromState(state).experience.length);
-    if (hasContent) {
-      const ok = await confirmDialog({
-        title: "Load sample resume?",
-        message: "This replaces your current form entries with a complete sample resume.",
-        confirmLabel: "Load sample",
-      });
-      if (!ok) return;
-    }
-    state = sampleBuilderState();
-    saveState();
-    syncScalarsToDom();
-    syncLayoutButtons();
-    renderAllLists();
-    renderPreview();
-    showToast("Sample resume loaded.");
-  });
-
   document.getElementById("builderResetBtn")?.addEventListener("click", async () => {
     const ok = await confirmDialog({
       title: "Clear builder form?",
