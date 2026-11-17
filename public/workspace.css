@@ -1,4 +1,5 @@
 /* Product workspace: editorial hierarchy, quiet surfaces, accessible controls. */
+html { scrollbar-gutter: stable; }
 [data-reveal] { opacity: 1; transform: none; }
 @keyframes alertSlideIn {
   from { opacity: 0; transform: translateY(-6px); }
@@ -275,7 +276,7 @@ input[type="text"], textarea { font-size: 13px; border-radius: 7px; padding: 11p
 .builder-preview__label { font-size: 12px; font-weight: 700; color: var(--ink-dark); }
 .builder-preview__pages { font-size: 11px; font-weight: 600; color: var(--ink-muted); background: var(--bg-subtle); border: 1px solid var(--panel-border); padding: 2px 8px; border-radius: 999px; }
 .builder-preview__pages.is-multi { color: #b45309; background: rgba(245, 158, 11, 0.12); border-color: rgba(245, 158, 11, 0.35); }
-.builder-preview__layout-desc { margin: 0; padding: 8px 16px; font-size: 11.5px; color: var(--ink-muted); background: var(--surface-1); border-bottom: 1px solid var(--panel-border); }
+.builder-preview__layout-desc { margin: 0; padding: 8px 16px; min-height: 36px; display: flex; align-items: center; font-size: 11.5px; line-height: 1.35; color: var(--ink-muted); background: var(--surface-1); border-bottom: 1px solid var(--panel-border); }
 .field-hint-inline { font-weight: 400; color: var(--ink-muted); font-size: 11px; }
 .builder-layout-pills { display: flex; gap: 4px; flex-wrap: wrap; }
 .builder-layout-pills button { border: 1px solid var(--panel-border); background: var(--bg-subtle); color: var(--ink-muted); font: 600 11px var(--font-ui); padding: 5px 9px; border-radius: 6px; cursor: pointer; }
@@ -341,10 +342,7 @@ html[data-theme="dark"] .topbar { background: rgba(15, 23, 42, 0.94) !important;
   animation: popoverIn 0.18s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 .builder-tab, .source-switch button, .builder-layout-pills button, .tool-btn {
-  transition: background-color 0.16s ease, color 0.16s ease, border-color 0.16s ease, transform 0.12s ease, box-shadow 0.16s ease;
-}
-.builder-tab:active, .source-switch button:active, .tool-btn:active {
-  transform: scale(0.97);
+  transition: background-color 0.16s ease, color 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease;
 }
 @media (prefers-reduced-motion: reduce) {
   .view-page[data-transition="enter"],
