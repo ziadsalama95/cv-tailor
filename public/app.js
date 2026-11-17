@@ -262,19 +262,23 @@ function confirmDialog({ title, message, confirmLabel = "Continue", cancelLabel 
     confirmModalConfirm.textContent = confirmLabel;
     confirmModalCancel.textContent = cancelLabel;
     const previousFocus = document.activeElement;
-    const previousOverflow = document.body.style.overflow;
+    const savedScrollY = window.scrollY;
     confirmModal.hidden = false;
-    document.body.style.overflow = "hidden";
     Object.values(VIEW_ELS).forEach((view) => { view.inert = true; });
     if (siteTopbar) siteTopbar.inert = true;
-    requestAnimationFrame(() => confirmModalCancel.focus());
+    if (window.scrollY !== savedScrollY) window.scrollTo({ top: savedScrollY, behavior: "instant" });
+    requestAnimationFrame(() => {
+      confirmModalCancel.focus({ preventScroll: true });
+      if (window.scrollY !== savedScrollY) window.scrollTo({ top: savedScrollY, behavior: "instant" });
+    });
 
     function cleanup(result) {
+      const closeScrollY = window.scrollY;
       confirmModal.hidden = true;
-      document.body.style.overflow = previousOverflow;
       Object.values(VIEW_ELS).forEach((view) => { view.inert = false; });
       if (siteTopbar) siteTopbar.inert = false;
-      previousFocus?.focus();
+      previousFocus?.focus?.({ preventScroll: true });
+      if (window.scrollY !== closeScrollY) window.scrollTo({ top: closeScrollY, behavior: "instant" });
       confirmModalConfirm.removeEventListener("click", onConfirm);
       confirmModalCancel.removeEventListener("click", onCancel);
       confirmModalBackdrop.removeEventListener("click", onCancel);

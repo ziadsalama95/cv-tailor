@@ -1866,6 +1866,7 @@ html[data-theme="dark"] .job-summary-card__body-viewport::before {
   align-items: center;
   justify-content: center;
   padding: 20px;
+  overscroll-behavior: contain;
 }
 .confirm-modal__backdrop {
   position: absolute;
