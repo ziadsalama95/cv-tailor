@@ -4,8 +4,15 @@ const TAB_LABELS = {
   basics: "Basics",
   links: "Links",
   experience: "Experience",
-  education: "Education & Projects",
-  skills: "Skills & More",
+  education: "Education",
+  skills: "Skills",
+};
+
+const LAYOUT_DESCRIPTIONS = {
+  chronological: "Summary, Experience, Skills, Education — best for standard industry roles.",
+  hybrid: "Summary, Core Skills, Experience, Education — highlights capabilities first.",
+  technical: "Summary, Projects, Skills, Experience — built for engineering & portfolio roles.",
+  academic: "Education, Research, Publications, Teaching — tailored for academic & R&D CVs.",
 };
 
 function cleanStr(value) {
@@ -385,6 +392,8 @@ export function initCvBuilder({ renderResume, onFinish, onDownloadPdf, onTailor,
       btn.classList.toggle("is-active", active);
       btn.setAttribute("aria-pressed", String(active));
     });
+    const descEl = document.getElementById("builderLayoutDesc");
+    if (descEl) descEl.textContent = LAYOUT_DESCRIPTIONS[state.layout] || LAYOUT_DESCRIPTIONS.chronological;
   }
 
   function syncTabCounts() {
@@ -462,8 +471,8 @@ export function initCvBuilder({ renderResume, onFinish, onDownloadPdf, onTailor,
           <label class="form-field"><span>Job title</span><input type="text" data-field="role" value="${escapeAttr(item.role)}" placeholder="e.g. Software Engineer"></label>
           <label class="form-field"><span>Company</span><input type="text" data-field="company" value="${escapeAttr(item.company)}" placeholder="e.g. Acme Corp"></label>
           <label class="form-field"><span>Dates</span><input type="text" data-field="dates" value="${escapeAttr(item.dates)}" placeholder="e.g. Jan 2023 - Present"></label>
-          <label class="form-field"><span>Category</span>
-            <select data-field="kind">
+          <label class="form-field"><span>Category <small class="field-hint-inline">(for Academic)</small></span>
+            <select data-field="kind" title="Controls grouping in the Academic layout">
               <option value="industry"${item.kind === "industry" ? " selected" : ""}>Industry</option>
               <option value="research"${item.kind === "research" ? " selected" : ""}>Research</option>
               <option value="teaching"${item.kind === "teaching" ? " selected" : ""}>Teaching</option>
@@ -521,6 +530,13 @@ export function initCvBuilder({ renderResume, onFinish, onDownloadPdf, onTailor,
     `);
   }
 
+  function autoResizeTextareas() {
+    viewBuilder.querySelectorAll("textarea").forEach((ta) => {
+      ta.style.height = "auto";
+      ta.style.height = `${Math.max(ta.scrollHeight + 2, 68)}px`;
+    });
+  }
+
   function fitPreview() {
     if (!previewStage || !previewSheet || !previewPaper || viewBuilder.hidden) return;
     const availableW = previewStage.clientWidth - 24;
@@ -530,6 +546,13 @@ export function initCvBuilder({ renderResume, onFinish, onDownloadPdf, onTailor,
     previewPaper.style.setProperty("--builder-scale", String(scale));
     previewSheet.style.width = `${Math.floor(paperW * scale)}px`;
     previewSheet.style.height = `${Math.ceil(previewPaper.offsetHeight * scale)}px`;
+    const pageEl = document.getElementById("builderPageEstimate");
+    if (pageEl) {
+      const a4H = paperW * (297 / 210);
+      const pages = Math.max(1, Math.ceil((previewPaper.scrollHeight - 4) / a4H));
+      pageEl.textContent = pages === 1 ? "1 page" : `${pages} pages`;
+      pageEl.classList.toggle("is-multi", pages > 1);
+    }
   }
 
   function renderPreview() {
@@ -556,6 +579,7 @@ export function initCvBuilder({ renderResume, onFinish, onDownloadPdf, onTailor,
     previewPaper.className = `resume-paper template-executive layout-${state.layout}`;
     previewPaper.innerHTML = html;
     syncTabCounts();
+    autoResizeTextareas();
     requestAnimationFrame(fitPreview);
   }
 

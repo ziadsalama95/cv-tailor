@@ -132,5 +132,25 @@ html .resume-paper .cv-section { margin-top: 15px; }
 html .resume-paper .cv-entry { margin-bottom: 11px; }
 html .resume-paper .cv-bullets { margin-top: 4px; }
 html .resume-paper .cv-bullets li { margin-bottom: 3.5px; }
-@media (max-width: 700px) { .workbench-actions { flex-wrap: wrap; } .link-popover__input { font-size: 16px; } .canvas-statusbar__status { flex-wrap: wrap; } }
+@media (max-width: 700px) {
+  .workbench-actions { flex-wrap: wrap; }
+  .link-popover__input { font-size: 16px; }
+  .canvas-statusbar__status { flex-wrap: wrap; }
+  .workbench-toolbar .tool-btn__label { display: inline !important; font-size: 12px; }
+}
+
+/* Above-the-fold statusbar + clear inline editing cues */
+.review-heading { margin-bottom: 12px; }
+.document-workbench { max-height: calc(100dvh - 335px); min-height: 360px; }
 html #cvDocumentPaper { position: absolute; top: 0; left: 0; width: 210mm; min-height: 297mm; margin: 0; }
+html #cvDocumentPaper :is(.cv-name, .cv-title, .cv-summary, .cv-entry-role, .cv-entry-company, .cv-entry-dates, .cv-entry-sub, .cv-bullets > li, .cv-skill-row, .cv-contact-item) {
+  transition: outline-color 0.14s ease, background-color 0.14s ease;
+  border-radius: 3px;
+}
+html #cvDocumentPaper :is(.cv-name, .cv-title, .cv-summary, .cv-entry-role, .cv-entry-company, .cv-entry-dates, .cv-entry-sub, .cv-bullets > li, .cv-skill-row, .cv-contact-item):hover {
+  outline: 1.5px dashed rgba(0, 87, 184, 0.28);
+  outline-offset: 2px;
+  background-color: rgba(0, 87, 184, 0.025);
+}
+html #cvDocumentPaper:focus-within { box-shadow: 0 0 0 2px rgba(0, 87, 184, 0.22); }
+.icon-popover__btn.is-active { font-weight: 700; color: var(--primary); }

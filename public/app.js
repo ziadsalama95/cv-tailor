@@ -1323,9 +1323,9 @@ btnReset.addEventListener("click", async () => {
   const hasEdits = editStatusDot && editStatusDot.classList.contains("is-edited");
   if (hasEdits) {
     const ok = await confirmDialog({
-      title: "Reset your edits?",
-      message: "This clears everything you've changed here and brings back the original tailored draft.",
-      confirmLabel: "Reset",
+      title: "Discard your edits?",
+      message: "This clears everything you've changed in the editor and restores the original draft.",
+      confirmLabel: "Discard edits",
     });
     if (!ok) return;
   }
@@ -1653,7 +1653,17 @@ function openIconMenu(anchorRect, item) {
   const label = iconEl ? (window.CvIcons.paths[iconEl.dataset.icon] || {}).label : "";
   el("iconPopoverTitle").textContent = label ? `${label} icon` : "Link icons";
   el("iconPopoverRemove").hidden = !iconEl;
-  el("iconPopoverHideAll").textContent = iconsHidden() ? "Show all icons" : "Hide all icons";
+  const addAllBtn = el("iconPopoverAddAll");
+  const hideAllBtn = el("iconPopoverHideAll");
+  const hidden = iconsHidden();
+  if (addAllBtn) {
+    addAllBtn.classList.toggle("is-active", !hidden);
+    addAllBtn.textContent = !hidden ? "✓ Show link icons" : "Show link icons";
+  }
+  if (hideAllBtn) {
+    hideAllBtn.classList.toggle("is-active", hidden);
+    hideAllBtn.textContent = hidden ? "✓ Hide link icons" : "Hide link icons";
+  }
   iconPopover.hidden = false;
   if (btnToggleIcons && !item) btnToggleIcons.setAttribute("aria-expanded", "true");
   const margin = 8;
@@ -1706,12 +1716,8 @@ if (iconPopover) {
     if (iconsHidden()) setIconsHidden(false);
     hideIconPopover();
   });
-  el("iconPopoverRemoveAll").addEventListener("click", () => {
-    editAllContactItems((item) => window.CvIcons.removeFrom(item));
-    hideIconPopover();
-  });
   el("iconPopoverHideAll").addEventListener("click", () => {
-    setIconsHidden(!iconsHidden());
+    setIconsHidden(true);
     hideIconPopover();
   });
 }
@@ -1763,22 +1769,21 @@ function applyLayout(key, { record = true } = {}) {
 
   if (record) commitHistory();
 
-  const caches = [...cvDocumentPaper.querySelectorAll(":scope > template[data-layout-cache]")];
-  caches.forEach(node => node.remove());
-  let current = caches.find(node => node.dataset.layoutCache === activeLayout);
-  if (!current) {
-    current = document.createElement("template");
-    current.dataset.layoutCache = activeLayout;
-    caches.push(current);
+  const order = layout.sections || [];
+  const existingSections = [...cvDocumentPaper.querySelectorAll(":scope > .cv-section")];
+  if (existingSections.length) {
+    const byKey = new Map(existingSections.map((sec) => [sec.dataset.section, sec]));
+    const ordered = [];
+    for (const key of order) {
+      const sec = byKey.get(key);
+      if (sec) {
+        ordered.push(sec);
+        byKey.delete(key);
+      }
+    }
+    for (const sec of byKey.values()) ordered.push(sec);
+    cvDocumentPaper.append(...ordered);
   }
-  current.innerHTML = cvDocumentPaper.innerHTML;
-  const target = caches.find(node => node.dataset.layoutCache === layout.key);
-  const shared = [".cv-name", ".cv-contact"].map(selector => [selector, cvDocumentPaper.querySelector(selector)?.cloneNode(true)]);
-  cvDocumentPaper.innerHTML = target ? target.innerHTML : buildResumeInnerHtml(parsedCvData, { layout: layout.key });
-  for (const [selector, node] of shared) {
-    if (node) cvDocumentPaper.querySelector(selector)?.replaceWith(node);
-  }
-  cvDocumentPaper.append(...caches);
   const headerEl = cvDocumentPaper.querySelector(".cv-header");
   if (headerEl) headerEl.dataset.layout = layout.key;
   activeLayout = layout.key;
@@ -1892,7 +1897,7 @@ if (layoutPopover) {
     const key = option.dataset.layout;
     if (key !== activeLayout) {
       applyLayout(key);
-      showToast(`${window.CvLayouts.get(key).name} layout applied. Edits are saved in each layout.`);
+      showToast(`${window.CvLayouts.get(key).name} layout applied.`);
     }
     hideLayoutPopover();
     btnLayout.focus({ preventScroll: true });
@@ -2761,6 +2766,9 @@ function renderExecutiveResume(data, template, layout) {
   parsedCvData = data;
   activeLayout = layout || activeLayout;
   cvDocumentPaper.innerHTML = buildResumeInnerHtml(data, { layout: activeLayout });
+  cvDocumentPaper.querySelectorAll(".cv-name, .cv-contact, .cv-entry-company, .cv-link").forEach((node) => {
+    node.setAttribute("spellcheck", "false");
+  });
   const currentTemplate = template || DEFAULT_TEMPLATE;
   cvDocumentPaper.className = `resume-paper template-${currentTemplate} layout-${activeLayout}`;
   cvDocumentPaper.dataset.layout = activeLayout;
@@ -3431,11 +3439,15 @@ function setSourceControlsBusy(busy) {
 function updateReadiness() {
   const words = jobDescription.value.trim().split(/\s+/).filter(Boolean).length;
   el("descriptionCount").textContent = `${words.toLocaleString()} ${words === 1 ? "word" : "words"}`;
+  const cvWords = cvText.value.trim().split(/\s+/).filter(Boolean).length;
+  const cvTextCountEl = el("cvTextCount");
+  if (cvTextCountEl) cvTextCountEl.textContent = `${cvWords.toLocaleString()} ${cvWords === 1 ? "word" : "words"}`;
   const ready = !isProcessingFile && Boolean(cvText.value.trim() || cvImages.length) && Boolean(jobTitle.value.trim()) && words > 0;
   const status = el("readinessText");
   if (ready && el("workspaceErrorText").textContent.startsWith("Please fill in the highlighted")) el("workspaceError").hidden = true;
   status.classList.toggle("is-ready", ready);
   status.textContent = isProcessingFile ? "Reading your resume…" : ready ? "Ready to tailor" : "Add your resume, job title, and description";
+  if (tailorBtn) tailorBtn.classList.toggle("is-incomplete", !ready && !isProcessingFile);
 }
 
 async function switchSource(mode) {
@@ -3450,6 +3462,8 @@ async function switchSource(mode) {
   sourceUpload.setAttribute("aria-pressed", String(mode === "upload"));
   sourcePaste.setAttribute("aria-pressed", String(mode === "paste"));
   cvText.hidden = mode !== "paste";
+  const cvTextCaption = el("cvTextCaption");
+  if (cvTextCaption) cvTextCaption.hidden = mode !== "paste";
   cvDropZone.hidden = mode === "paste";
   if (mode === "paste") cvText.value = pastedResume;
   markFieldValid(cvText);
@@ -3559,6 +3573,7 @@ function openCvBuilder() {
 }
 
 el("previewExampleBtn")?.addEventListener("click", openCvBuilder);
+el("topbarBuildBtn")?.addEventListener("click", openCvBuilder);
 el("sourceBuild")?.addEventListener("click", openCvBuilder);
 el("btnEditInBuilder")?.addEventListener("click", () => {
   if (!parsedCvData || isTailoring) return;

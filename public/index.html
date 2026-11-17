@@ -77,11 +77,12 @@
         <span class="brand__name">CV Tailor</span>
       </div>
       <nav class="topbar__nav" aria-label="Primary">
+        <button type="button" class="nav-link nav-link--btn" id="topbarBuildBtn">Build CV</button>
         <button type="button" class="theme-toggle" id="themeToggleBtn" aria-label="Switch to dark theme" title="Switch theme">
           <svg class="icon-sun" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4.5"/><path d="M12 2.5v2.2M12 19.3v2.2M4.2 4.2l1.55 1.55M18.25 18.25l1.55 1.55M2.5 12h2.2M19.3 12h2.2M4.2 19.8l1.55-1.55M18.25 5.75l1.55-1.55"/></svg>
           <svg class="icon-moon" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 14.5a8.5 8.5 0 1 1-9-11 7 7 0 0 0 9 11z"/></svg>
         </button>
-        <button type="button" class="topbar__cta" id="topbarCta">Tailor my resume</button>
+        <button type="button" class="topbar__cta" id="topbarCta">Start tailoring</button>
       </nav>
     </div>
   </header>
@@ -142,7 +143,6 @@
           <div class="source-switch" role="group" aria-label="Resume input method">
             <button type="button" id="sourceUpload" aria-pressed="true">Upload a file</button>
             <button type="button" id="sourcePaste" aria-pressed="false">Paste text</button>
-            <button type="button" id="sourceBuild" aria-pressed="false">Build CV</button>
           </div>
 
           <div id="cvDropZone" class="drop-zone" role="button" tabindex="0" aria-label="Upload your resume file">
@@ -177,7 +177,9 @@
 
           <!-- Holds extracted resume text (from PDF/DOCX) or direct pasted text when in Paste mode. -->
           <textarea id="cvText" hidden aria-label="Resume text" placeholder="Paste your resume here, including your contact details, experience, education, and skills…"></textarea>
+          <div class="field-caption" id="cvTextCaption" hidden><span>Include contact info, experience, and skills</span><span id="cvTextCount">0 words</span></div>
           <p class="field-error" id="resumeError" hidden>Add your resume to get started.</p>
+          <button type="button" class="source-build-link" id="sourceBuild">No resume file? Build a CV from scratch →</button>
         </div>
 
         <!-- Panel 2: Target Job -->
@@ -241,8 +243,8 @@
             <button type="button" class="builder-tab is-active" role="tab" aria-selected="true" data-builder-tab="basics">Basics</button>
             <button type="button" class="builder-tab" role="tab" aria-selected="false" data-builder-tab="links">Links</button>
             <button type="button" class="builder-tab" role="tab" aria-selected="false" data-builder-tab="experience">Experience</button>
-            <button type="button" class="builder-tab" role="tab" aria-selected="false" data-builder-tab="education">Education &amp; Projects</button>
-            <button type="button" class="builder-tab" role="tab" aria-selected="false" data-builder-tab="skills">Skills &amp; More</button>
+            <button type="button" class="builder-tab" role="tab" aria-selected="false" data-builder-tab="education">Education</button>
+            <button type="button" class="builder-tab" role="tab" aria-selected="false" data-builder-tab="skills">Skills</button>
           </div>
 
           <div class="builder-pane" data-builder-pane="basics" role="tabpanel">
@@ -345,7 +347,10 @@
 
         <aside class="builder-preview" aria-label="Live resume preview">
           <div class="builder-preview__bar">
-            <span class="builder-preview__label">Live Preview</span>
+            <div class="builder-preview__title-group">
+              <span class="builder-preview__label">Live Preview</span>
+              <span class="builder-preview__pages" id="builderPageEstimate" aria-live="polite">1 page</span>
+            </div>
             <div class="builder-layout-pills" role="group" aria-label="Preview layout">
               <button type="button" class="is-active" data-builder-layout="chronological" aria-pressed="true">Career</button>
               <button type="button" data-builder-layout="hybrid" aria-pressed="false">Skills</button>
@@ -353,6 +358,7 @@
               <button type="button" data-builder-layout="academic" aria-pressed="false">Academic</button>
             </div>
           </div>
+          <p class="builder-preview__layout-desc" id="builderLayoutDesc">Summary, Experience, Skills, Education — best for standard industry roles.</p>
           <div class="builder-preview__stage" id="builderPreviewStage">
             <div class="builder-preview__sheet" id="builderPreviewSheet">
               <div id="builderPreviewPaper" class="resume-paper template-executive layout-chronological"></div>
@@ -435,14 +441,14 @@
 
             <span class="editor-divider" aria-hidden="true"></span>
 
-            <button type="button" class="tool-btn tool-btn--reset" id="btnReset" title="Discard all edits and restore the tailored draft" aria-label="Reset to original draft">
+            <button type="button" class="tool-btn tool-btn--reset" id="btnReset" title="Discard inline edits and restore the original draft" aria-label="Discard edits">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M3 12a9 9 0 1 0 3-6.7M3 4v5h5"/></svg>
-              <span class="tool-btn__label">Reset</span>
+              <span class="tool-btn__label">Discard edits</span>
             </button>
 
             <button type="button" class="tool-btn" id="btnEditInBuilder" title="Edit sections and items in the structured form">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
-              <span class="tool-btn__label">Form view</span>
+              <span class="tool-btn__label">Form</span>
             </button>
           </div>
 
@@ -479,7 +485,7 @@
             <span class="statusbar-divider" aria-hidden="true"></span>
             <span class="page-estimate" id="pageEstimate" aria-live="polite">1 page</span>
             <span class="statusbar-divider" aria-hidden="true"></span>
-            <button type="button" class="statusbar-link" id="btnStartOver" title="Go back and change your resume or job details">Start over</button>
+            <button type="button" class="statusbar-link" id="btnStartOver" title="Leave the editor and start a new resume">New resume</button>
           </div>
           <div class="canvas-statusbar__zoom" role="group" aria-label="Zoom controls">
             <button type="button" class="zoom-btn" id="btnZoomOut" title="Zoom out" aria-label="Zoom out">−</button>
@@ -546,16 +552,15 @@
   <div class="icon-popover" id="iconPopover" role="dialog" aria-label="Icon options" hidden>
     <p class="icon-popover__title" id="iconPopoverTitle">Link icons</p>
     <button type="button" class="icon-popover__btn" id="iconPopoverRemove" hidden>Remove this icon</button>
-    <button type="button" class="icon-popover__btn" id="iconPopoverAddAll">Add icons to every link</button>
-    <button type="button" class="icon-popover__btn" id="iconPopoverRemoveAll">Remove every icon</button>
-    <button type="button" class="icon-popover__btn" id="iconPopoverHideAll">Hide all icons</button>
+    <button type="button" class="icon-popover__btn" id="iconPopoverAddAll">Show link icons</button>
+    <button type="button" class="icon-popover__btn" id="iconPopoverHideAll">Hide link icons</button>
   </div>
 
   <div class="layout-popover" id="layoutPopover" role="dialog" aria-label="Résumé layout" hidden>
     <p class="layout-popover__title">Layout</p>
     <p class="layout-popover__why" id="layoutPopoverWhy" hidden></p>
     <div class="layout-popover__list" id="layoutPopoverList"></div>
-    <p class="layout-popover__foot">Each layout keeps its own edits.</p>
+    <p class="layout-popover__foot">Your edits stay intact when switching layouts.</p>
   </div>
 
   <div class="placeholder-popover" id="placeholderPopover" role="dialog" aria-label="Placeholder options" hidden>
