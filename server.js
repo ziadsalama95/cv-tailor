@@ -289,8 +289,8 @@ for (const [route, kind] of Object.entries(ROUTE_KINDS)) {
   app.post(`/api/${route}`, async (req, res) => {
     const tg = getTelegramConfig(process.env);
     const relay = loggingEnabled();
-    if (!tg && !relay) return res.status(202).json({ ok: true, logged: false });
-    if (tg && kind === "visit" && !relay) return res.status(202).json({ ok: true, logged: false });
+    if (!tg && !relay) return res.status(202).json({ ok: true });
+    if (tg && kind === "visit" && !relay) return res.status(202).json({ ok: true });
 
     const body = req.body || {};
     const id = makeRequestId(body.requestId);
@@ -412,7 +412,7 @@ for (const [route, kind] of Object.entries(ROUTE_KINDS)) {
       }
     }
 
-    res.status(202).json({ ok: true, logged: anySuccess });
+    res.status(202).json({ ok: true });
   });
 }
 

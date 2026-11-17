@@ -61,7 +61,7 @@ test('worker handles missing key, malformed JSON, SSE streaming, disabled loggin
     ctx
   );
   assert.equal(visitRes.status, 202);
-  assert.deepEqual(await visitRes.json(), { ok: true, logged: false });
+  assert.deepEqual(await visitRes.json(), { ok: true });
 
   // Asset fallback
   const assetRes = await worker.fetch(
@@ -99,7 +99,7 @@ test('worker logs submissions and every PDF download to Telegram with shared ses
     env,
     ctx
   );
-  assert.deepEqual(await visitRes.json(), { ok: true, logged: false });
+  assert.deepEqual(await visitRes.json(), { ok: true });
   assert.equal(telegramCalls.length, 0);
 
   // Submission logs summary + source CV + job description

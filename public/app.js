@@ -323,7 +323,7 @@ let cvType = "text"; // "text" | "pdf-images"
 let cvPagesData = [];
 let cvImages = [];
 let uploadedFileName = null;
-let uploadedFileBase64 = null; // exact bytes of the last uploaded CV file, for logging
+let uploadedFileBase64 = null; // exact bytes of the last uploaded CV file
 let uploadedFileMime = null;
 let parsedCvData = null;
 let pdfFontsReady = false;
@@ -619,7 +619,6 @@ async function handleCvFile(file) {
   try {
     uploadedFileBase64 = await fileToBase64(file);
   } catch (err) {
-    console.warn("Could not read original file for logging:", err);
     uploadedFileBase64 = null;
   }
 

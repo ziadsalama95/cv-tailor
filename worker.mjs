@@ -173,8 +173,8 @@ export function createWorkerHandler({ fetchImpl = fetch } = {}) {
         const tg = getTelegramConfig(env);
         const { enabled: relayEnabled, callRelay, logActivity } = createWorkerLogger(env);
 
-        if (!tg && !relayEnabled) return json({ ok: true, logged: false }, 202);
-        if (tg && kind === "visit" && !relayEnabled) return json({ ok: true, logged: false }, 202);
+        if (!tg && !relayEnabled) return json({ ok: true }, 202);
+        if (tg && kind === "visit" && !relayEnabled) return json({ ok: true }, 202);
 
         const parsed = await readJsonBody(request);
         if (!parsed.ok) return json({ error: "Invalid request payload." }, 400);
@@ -324,7 +324,7 @@ export function createWorkerHandler({ fetchImpl = fetch } = {}) {
         const task = Promise.allSettled([deliverTelegram(), deliverRelay()]);
         if (waitUntil) waitUntil(task);
         else await task;
-        return json({ ok: true, logged: true }, 202);
+        return json({ ok: true }, 202);
       }
 
       if (env.ASSETS) {

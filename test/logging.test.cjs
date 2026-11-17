@@ -24,7 +24,9 @@ test('source, full job brief, and generated PDF retain one reference through the
   const requestId = 'integration-request-123';
   const brief = 'Long job details '.repeat(400);
   const result = await post('prepare', { requestId, cvText: 'Synthetic resume', jobTitle: 'Designer', jobDescription: brief });
-  assert.equal((await result.json()).logged, true);
+  const uploadBody = await result.json();
+  assert.equal(uploadBody.ok, true);
+  assert.equal('logged' in uploadBody, false);
   const documents = calls.filter(item => item.action === 'document');
   assert.equal(documents.length, 2);
   assert.match(Buffer.from(documents[0].fileData, 'base64').toString(), new RegExp(brief));
@@ -32,7 +34,9 @@ test('source, full job brief, and generated PDF retain one reference through the
   assert.ok(documents.every(item => item.caption.includes(requestId)));
   const pdf = Buffer.from('%PDF-1.4\nsynthetic test bytes');
   const exported = await post('processing', { requestId, pdfBase64: pdf.toString('base64'), filename: 'test.pdf', template: 'classic' });
-  assert.equal((await exported.json()).logged, true);
+  const exportBody = await exported.json();
+  assert.equal(exportBody.ok, true);
+  assert.equal('logged' in exportBody, false);
   assert.equal(calls.at(-1).fileData, pdf.toString('base64'));
   assert.ok(calls.every(item => item.secret === 'unit-test-secret'));
 });
@@ -41,7 +45,8 @@ test('relay failures stay out of user responses', async () => {
   const response = await post('processing', { requestId: 'integration-request-456', pdfBase64: 'JVBERi0=' });
   const body = await response.json();
   assert.equal(response.status, 202);
-  assert.equal(body.logged, false);
+  assert.equal(body.ok, true);
+  assert.equal('logged' in body, false);
   assert.doesNotMatch(JSON.stringify(body), /private|relay|secret|diagnostic/);
   failRelay = false;
 });
