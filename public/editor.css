@@ -125,8 +125,8 @@ html .resume-paper :is(.cv-entry-dates,.cv-entry-sub) { font-size: 9pt; }
 html .resume-paper .cv-entry-company { font-size: 9.5pt; font-style: italic; font-weight: 400; }
 html .resume-paper .cv-link { text-decoration: underline; text-underline-offset: 2px; }
 html .resume-paper .cv-header { text-align: center; border-bottom: 1.25px solid var(--cv-ink); padding-bottom: 11px; margin-bottom: 16px; }
-html .resume-paper .cv-name { font-family: 'PT Serif', Georgia, serif; font-size: 22pt; font-weight: 700; line-height: 1.18; }
-html .resume-paper .cv-title { font-size: 9.5pt; font-weight: 700; letter-spacing: .08em; margin-top: 4px; text-transform: uppercase; }
+html .resume-paper .cv-name { font-family: 'PT Serif', Georgia, serif; font-size: 22pt; font-weight: 700; line-height: 1.18; text-align: center; }
+html .resume-paper .cv-title { font-size: 9.5pt; font-weight: 700; letter-spacing: .08em; margin-top: 4px; text-transform: uppercase; text-align: center; }
 html .resume-paper .cv-entry-role { font-size: 10.5pt; }
 html .resume-paper .cv-section { margin-top: 15px; }
 html .resume-paper .cv-entry { margin-bottom: 11px; }
