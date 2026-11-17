@@ -1,100 +1,124 @@
 # CV Tailor
 
-Web app that tailors PDF, DOCX, or plain-text resumes to a target job description and exports an ATS-friendly A4 PDF. Built with Express, vanilla JavaScript, NVIDIA NIM (`nvidia/nemotron-3.5-super-vl-120b-a12b`), `pdf.js`, `mammoth.js`, and `pdfmake`.
+**A focused resume-tailoring workspace that turns a candidate’s experience and a target job description into an editable, ATS-conscious PDF.**
 
-## Features
+[Open the live application](https://cv-tailor.ziad-dev9.workers.dev/)
 
-- Accepts uploaded PDFs (including scanned PDFs via page images), `.docx` files, or pasted plain text, plus an optional job-posting screenshot.
-- Streams tailored resume JSON over Server-Sent Events (`POST /api/tailor`) into a live-typeset preview.
-- Enforces factual constraints in the prompt so employers, dates, degrees, and metrics are preserved, using explicit `[PLACEHOLDER]` tags for missing details.
-- Supports three rewrite levels (**Light touch**, **Balanced**, **Full rewrite**) and four single-column layouts (**Career**, **Skills**, **Portfolio**, **Academic**).
-- Provides an editable A4 workbench with undo/redo, inline formatting and link editing, contact-icon detection and vector glyph export, and a 50-profile example deck.
-- Exports selectable-text vector PDFs client-side via `pdfmake` with embedded `PT Serif`, `PT Sans`, `Barlow`, and custom icon fonts.
+CV Tailor accepts an existing resume or a newly created CV, adapts its language to a target role, and gives the user an editable preview before export. The workflow is designed to keep the candidate in control: generated content can be reviewed and edited, and missing information is marked rather than invented.
 
-## Stack
+## Product capabilities
 
-- **Backend:** Node.js (>= 18), Express 5, `dotenv`, `ua-parser-js`
-- **AI Provider:** NVIDIA NIM Chat Completions API (`nvidia/nemotron-3.5-super-vl-120b-a12b`)
-- **Frontend:** Vanilla HTML/CSS/JS (no build step)
-- **PDF / DOCX Tooling:** Vendored `pdf.js`, `mammoth.js`, and `pdfmake`
+- **Flexible source material:** upload PDF or DOCX, paste resume text, or build a CV from scratch. Job details can be entered directly, with support for a job-posting screenshot.
+- **Streaming generation:** tailored content appears progressively in a live resume preview while the server streams the model response over Server-Sent Events.
+- **Fact-aware rewriting:** prompts preserve source facts such as employers, dates, qualifications, and measurable results; unsupported details are identified with explicit placeholders.
+- **Adjustable tailoring:** choose Light touch, Balanced, or Full rewrite, then select from Career, Skills, Portfolio, and Academic layouts.
+- **Review before export:** edit the A4 document in the browser with undo and redo, formatting controls, and link editing.
+- **Selectable-text PDF output:** generate a vector PDF in the browser, with embedded typefaces and contact-link icons.
+- **Example profiles:** explore a set of sample profiles to preview the available layouts and editing experience.
 
-## Setup
+## How it works
+
+```mermaid
+flowchart LR
+    A[Resume, pasted text, or CV builder] --> B[Browser parsing and editing]
+    C[Job description or screenshot] --> D[Validated tailoring request]
+    B --> D
+    D --> E[Node.js or Cloudflare Worker]
+    E --> F[NVIDIA NIM chat completions]
+    F --> G[Server-sent event stream]
+    G --> H[Editable resume preview]
+    H --> I[Client-side A4 PDF export]
+```
+
+PDF and DOCX extraction and PDF generation use browser-side libraries. The application server validates requests, builds model prompts, and streams the generated result back to the browser.
+
+## Technology
+
+| Area | Implementation |
+| --- | --- |
+| Interface | HTML, CSS, and vanilla JavaScript |
+| Local/API server | Node.js 18+, Express 5 |
+| Edge deployment | Cloudflare Workers with Static Assets |
+| Model API | NVIDIA NIM Chat Completions (`nvidia/nemotron-3.5-super-vl-120b-a12b`) |
+| Streaming | Server-Sent Events (SSE) |
+| Document input | PDF.js and Mammoth.js |
+| PDF output | pdfmake with embedded fonts and vector icons |
+| Verification | Node.js built-in test runner and syntax checks |
+
+The project also includes a Vercel configuration for the Express server.
+
+## Run locally
+
+Requirements: Node.js 18 or later and an NVIDIA API key.
 
 ```bash
 npm install
-cp .env.example .env
 ```
 
-Add your NVIDIA API key from [build.nvidia.com/settings](https://build.nvidia.com/settings) to `.env`:
+Create a local `.env` file from the example and set `NVIDIA_API_KEY`:
 
 ```env
-NVIDIA_API_KEY=nvapi-your-key-here
+NVIDIA_API_KEY=your-nvidia-api-key
 PORT=3000
 ```
 
-Start the server:
+Start the application:
 
 ```bash
 npm start
 ```
 
-Then open `http://localhost:3000`.
+Open [http://localhost:3000](http://localhost:3000). Keep API credentials in environment variables; do not put real credentials in source files or commit them.
 
 ## Deploy to Cloudflare Workers
 
-This project supports Cloudflare Workers with Static Assets via `wrangler.jsonc` and `worker.mjs`:
+Configure the NVIDIA key as a Worker secret, then deploy with Wrangler:
 
 ```bash
 npx wrangler secret put NVIDIA_API_KEY
 npx wrangler deploy
 ```
 
-For local Cloudflare emulation, put `NVIDIA_API_KEY=...` in `.dev.vars` and run `npm run cf:dev`.
-
-## Scripts
+For local Worker emulation, add `NVIDIA_API_KEY=...` to `.dev.vars` and run:
 
 ```bash
-npm start                     # Run server on PORT (default 3000)
-npm run preview               # Local preview on 127.0.0.1:3001 with activity logging off
-npm run preview -- --fixture  # Mock SSE stream on 127.0.0.1:3002 without API calls
-npm run check                 # Syntax check for server and client JS
-npm test                      # Run node:test suite
-npm run build:icons           # Rebuild SVGs, icon registry, and PDF icon font (needs Python + fonttools/skia-pathops)
+npm run cf:dev
 ```
 
-## Structure
+The Worker configuration serves the static application from `public/` and routes `/api/*` requests through `worker.mjs`.
+
+## Useful commands
+
+```bash
+npm start                     # Run the Express server
+npm run preview                # Start a local preview server
+npm run preview -- --fixture   # Fixture-based streaming preview without API calls
+npm run check                  # Syntax-check server, worker, and client files
+npm test                       # Run the Node.js test suite
+npm run build:icons            # Rebuild generated icon assets
+```
+
+`build:icons` requires Python and the `fonttools` and `skia-pathops` packages.
+
+## Project structure
 
 ```text
-server.js             Express server for Node.js / Vercel
-worker.mjs            Cloudflare Workers entrypoint (fetch handler)
-wrangler.jsonc        Cloudflare Workers + Static Assets config
-vercel.json           Vercel serverless config (300s maxDuration)
-lib/
-  model.js            Active AI model config and NVIDIA NIM request helper
-  prompts.js          System/user prompts, budgets, and request validation
-  tailor-stream.js    SSE streaming, key rotation, NVCF 202 polling, draft salvage
-  activity.js         Structured activity logger with secret redaction
-public/
-  index.html          Single-page app markup
-  app.js              Upload parsing, SSE client, editor, PDF export
-  cv-layouts.js       Layout specs, section adaptation, fallback recommender
-  cv-icons.js         Contact link detection, URL cleanup, DOM icon sync
-  live-resume.js      Streaming preview renderer and scroll tracking
-  hero-lab.js         Homepage example carousel
-  demo-profiles.js    50 sample profiles across all layouts
-  vendor/             Local pdf.js, mammoth.js, pdfmake, and embedded fonts
-scripts/              Icon manifest/build scripts and local preview server
-test/                 node:test unit and integration tests
+server.js                 Express entry point
+worker.mjs                Cloudflare Worker entry point
+lib/model.js              NVIDIA NIM request configuration
+lib/prompts.js            Input validation, prompt construction, and budgets
+lib/tailor-stream.js      Streaming, retries, and response recovery
+public/index.html         Application markup
+public/app.js             Upload flow, editor, streaming client, PDF export
+public/cv-builder.js      Build-a-CV workflow
+public/cv-layouts.js      Resume layout definitions and adaptation
+public/live-resume.js     Live preview rendering
+public/demo-profiles.js   Sample profiles for layout previews
+public/vendor/            Browser-side document and PDF libraries
+scripts/                  Preview server and icon generation utilities
+test/                     Unit and integration tests
 ```
-
-## Environment Variables
-
-- `NVIDIA_API_KEY` (required): Single key or comma-separated keys for automatic failover on errors/rate limits.
-- `PORT` (optional): HTTP port, defaults to `3000`.
-- `FUNCTION_MAX_DURATION_SECONDS` (optional): Platform timeout in seconds, defaults to `300` to match `vercel.json`.
-- `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` (optional): Direct Telegram Bot API logging for CV submissions and PDF downloads (session-linked, server-side only).
-- `LOG_API_URL`, `LOG_API_SECRET` (optional): External log relay endpoint and shared secret. Logging is disabled when unset.
 
 ## License
 
-[MIT](LICENSE)
+Released under the [MIT License](LICENSE). Third-party browser libraries and generated icon assets retain their respective upstream license notices; see [`public/vendor/THIRD_PARTY.md`](public/vendor/THIRD_PARTY.md).
