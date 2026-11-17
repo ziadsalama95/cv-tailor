@@ -229,3 +229,87 @@ test('worker logs errors to Telegram professionally and retries transient PDF de
   await Promise.allSettled(pending.splice(0));
   assert.equal(calls.filter((c) => c.url.endsWith('/sendDocument')).length, 2);
 });
+
+test('worker verifies Cloudflare Turnstile tokens on /api/verify and /api/tailor when configured', async () => {
+  const { createWorkerHandler } = await import('../worker.mjs');
+  const upstream = () => new Response(
+    new ReadableStream({
+      start(controller) {
+        controller.enqueue(new TextEncoder().encode('data: {"choices":[{"delta":{"content":"ok"}}]}\n\n'));
+        controller.enqueue(new TextEncoder().encode('data: {"choices":[{"delta":{},"finish_reason":"stop"}]}\n\ndata: [DONE]\n\n'));
+        controller.close();
+      },
+    }),
+    { status: 200, headers: { 'Content-Type': 'text/event-stream' } }
+  );
+
+  const worker = createWorkerHandler({
+    fetchImpl: async (url, options) => {
+      if (String(url).includes('challenges.cloudflare.com/turnstile/v0/siteverify')) {
+        const params = new URLSearchParams(options.body);
+        const success = params.get('response') === 'valid-token' && params.get('secret') === 'secret-key-xyz';
+        return new Response(JSON.stringify({ success, 'error-codes': success ? [] : ['invalid-input-response'] }), { status: 200 });
+      }
+      return upstream();
+    },
+  });
+
+  const env = {
+    NVIDIA_API_KEY: 'nvapi-test',
+    TURNSTILE_SITE_KEY: '0x4AAAAAAATestSiteKey',
+    TURNSTILE_SECRET_KEY: 'secret-key-xyz',
+  };
+  const ctx = { waitUntil: () => {} };
+
+  // Config endpoint exposes only siteKey
+  const cfgRes = await worker.fetch(new Request('https://example.test/api/config'), env, ctx);
+  assert.equal(cfgRes.status, 200);
+  const cfg = await cfgRes.json();
+  assert.equal(cfg.turnstileSiteKey, '0x4AAAAAAATestSiteKey');
+  assert.equal(JSON.stringify(cfg).includes('secret-key-xyz'), false);
+
+  // /api/verify rejects missing or invalid tokens, accepts valid token
+  const missingVerify = await worker.fetch(
+    new Request('https://example.test/api/verify', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' }),
+    env,
+    ctx
+  );
+  assert.equal(missingVerify.status, 403);
+
+  const badVerify = await worker.fetch(
+    new Request('https://example.test/api/verify', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ turnstileToken: 'bad' }) }),
+    env,
+    ctx
+  );
+  assert.equal(badVerify.status, 403);
+
+  const okVerify = await worker.fetch(
+    new Request('https://example.test/api/verify', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ turnstileToken: 'valid-token' }) }),
+    env,
+    ctx
+  );
+  assert.equal(okVerify.status, 200);
+
+  // /api/tailor rejects missing token with 403 and proceeds with valid token
+  const blockedTailor = await worker.fetch(
+    new Request('https://example.test/api/tailor', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ cvText: 'Resume', jobDescription: 'Role' }),
+    }),
+    env,
+    ctx
+  );
+  assert.equal(blockedTailor.status, 403);
+
+  const allowedTailor = await worker.fetch(
+    new Request('https://example.test/api/tailor', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ cvText: 'Resume', jobDescription: 'Role', turnstileToken: 'valid-token' }),
+    }),
+    env,
+    ctx
+  );
+  assert.equal(allowedTailor.status, 200);
+});

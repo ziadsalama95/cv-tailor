@@ -3,11 +3,13 @@ import promptsMod from "./lib/prompts.js";
 import streamMod from "./lib/tailor-stream.js";
 import activityMod from "./lib/activity.js";
 import telegramMod from "./lib/telegram.js";
+import turnstileMod from "./lib/turnstile.js";
 
 const { INVOKE_URL } = modelMod;
 const { computeBudgets, buildTailorRequest } = promptsMod;
 const { createTailorSseResponse, FRIENDLY_ERROR } = streamMod;
 const { safeDetail, requestId: makeRequestId, createActivityLogger } = activityMod;
+const { getTurnstileConfig, verifyTurnstileToken } = turnstileMod;
 const {
   escapeHtml,
   sanitizeSessionId,
@@ -73,7 +75,7 @@ function createWorkerLogger(env, fetchImpl = fetch) {
   const secret = sanitizeEnvValue(env?.LOG_API_SECRET);
   const enabled = Boolean(url && secret);
   const tg = getTelegramConfig(env);
-  const secrets = [env?.NVIDIA_API_KEY, secret, tg?.botToken, tg?.chatId].filter(Boolean);
+  const secrets = [env?.NVIDIA_API_KEY, secret, tg?.botToken, tg?.chatId, env?.TURNSTILE_SECRET_KEY].filter(Boolean);
 
   const callRelay = async (action, payload) => {
     if (!enabled) return;
@@ -160,6 +162,26 @@ export function createWorkerHandler({ fetchImpl = fetch } = {}) {
       const url = new URL(request.url);
       const waitUntil = typeof ctx?.waitUntil === "function" ? (p) => ctx.waitUntil(p) : undefined;
       try {
+      if (request.method === "GET" && url.pathname === "/api/config") {
+        const turnstile = getTurnstileConfig(env);
+        return json({ turnstileSiteKey: turnstile.enabled ? turnstile.siteKey : "" });
+      }
+
+      if (request.method === "POST" && url.pathname === "/api/verify") {
+        const parsed = await readJsonBody(request);
+        if (!parsed.ok) return json({ error: "Invalid request payload." }, 400);
+        const body = parsed.body && typeof parsed.body === "object" ? parsed.body : {};
+        const turnstile = getTurnstileConfig(env);
+        if (!turnstile.enabled) return json({ ok: true, skipped: true });
+        const check = await verifyTurnstileToken({
+          token: body.turnstileToken,
+          secretKey: turnstile.secretKey,
+          remoteIp: request.headers.get("cf-connecting-ip") || undefined,
+          fetchImpl,
+        });
+        if (!check.ok) return json({ ok: false, error: check.error }, 403);
+        return json({ ok: true });
+      }
 
       if (request.method === "POST" && url.pathname === "/api/tailor") {
         const parsed = await readJsonBody(request);
@@ -172,6 +194,25 @@ export function createWorkerHandler({ fetchImpl = fetch } = {}) {
         const { logActivity } = createWorkerLogger(env, fetchImpl);
         const tailorLog = (event, fields = {}) =>
           logActivity(event, { sessionId, jobTitle: body.jobTitle, route: "/api/tailor", ...fields });
+
+        const turnstile = getTurnstileConfig(env);
+        if (turnstile.enabled) {
+          const check = await verifyTurnstileToken({
+            token: body.turnstileToken,
+            secretKey: turnstile.secretKey,
+            remoteIp: request.headers.get("cf-connecting-ip") || undefined,
+            fetchImpl,
+          });
+          if (!check.ok) {
+            const p = tailorLog("turnstile_failed", {
+              requestId: reqId,
+              detail: (check.codes || []).join(", ") || check.error,
+            });
+            if (waitUntil) waitUntil(p);
+            else await p;
+            return json({ error: check.error, requestId: reqId }, 403);
+          }
+        }
 
         if (keys.length === 0) {
           const logPromise = tailorLog("configuration_missing", {

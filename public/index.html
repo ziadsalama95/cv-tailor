@@ -500,6 +500,17 @@
 
   </main>
 
+  <div class="confirm-modal" id="turnstileModal" hidden>
+    <div class="confirm-modal__backdrop" id="turnstileModalBackdrop"></div>
+    <div class="confirm-modal__panel glass-card turnstile-modal__panel" role="dialog" aria-modal="true" aria-labelledby="turnstileModalTitle">
+      <h3 id="turnstileModalTitle" class="confirm-modal__title">Quick security check</h3>
+      <div id="turnstileWidget" class="turnstile-widget-slot"></div>
+      <div class="confirm-modal__actions">
+        <button type="button" class="confirm-modal__btn confirm-modal__btn--ghost" id="turnstileModalCancel">Cancel</button>
+      </div>
+    </div>
+  </div>
+
   <div class="confirm-modal" id="confirmModal" hidden>
     <div class="confirm-modal__backdrop" id="confirmModalBackdrop"></div>
     <div class="confirm-modal__panel glass-card" role="alertdialog" aria-modal="true" aria-labelledby="confirmModalTitle" aria-describedby="confirmModalMessage">

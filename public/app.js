@@ -2247,6 +2247,103 @@ function getActivePdfTheme() {
   };
 }
 
+let turnstileSiteKeyPromise = null;
+let turnstileScriptPromise = null;
+let turnstileWidgetId = null;
+
+async function getTurnstileSiteKey() {
+  if (!turnstileSiteKeyPromise) {
+    turnstileSiteKeyPromise = fetch("/api/config")
+      .then((r) => (r.ok ? r.json() : {}))
+      .then((d) => String(d?.turnstileSiteKey || "").trim())
+      .catch(() => "");
+  }
+  return turnstileSiteKeyPromise;
+}
+
+function loadTurnstileScript() {
+  if (window.turnstile) return Promise.resolve();
+  if (!turnstileScriptPromise) {
+    turnstileScriptPromise = new Promise((resolve, reject) => {
+      const s = document.createElement("script");
+      s.src = "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";
+      s.async = true;
+      s.defer = true;
+      s.onload = () => resolve();
+      s.onerror = () => reject(new Error("Could not load security check."));
+      document.head.appendChild(s);
+    });
+  }
+  return turnstileScriptPromise;
+}
+
+async function verifyWithTurnstile(buttonEl, labelEl) {
+  const siteKey = await getTurnstileSiteKey();
+  if (!siteKey) return "";
+
+  const prevLabel = labelEl ? labelEl.textContent : "";
+  const prevDisabled = buttonEl ? buttonEl.disabled : false;
+  if (buttonEl) {
+    buttonEl.disabled = true;
+    buttonEl.classList.add("is-verifying");
+  }
+  if (labelEl) labelEl.textContent = "Verifying…";
+
+  const modal = el("turnstileModal");
+  const slot = el("turnstileWidget");
+  const cancelBtn = el("turnstileModalCancel");
+
+  try {
+    await loadTurnstileScript();
+    return await new Promise((resolve, reject) => {
+      let settled = false;
+      const cleanup = () => {
+        if (modal) modal.hidden = true;
+        if (cancelBtn) cancelBtn.onclick = null;
+      };
+      const fail = (msg) => {
+        if (settled) return;
+        settled = true;
+        cleanup();
+        reject(new Error(msg));
+      };
+      const succeed = (token) => {
+        if (settled) return;
+        settled = true;
+        cleanup();
+        resolve(token || "");
+      };
+
+      if (cancelBtn) cancelBtn.onclick = () => fail("Verification cancelled.");
+      if (turnstileWidgetId !== null) {
+        try { window.turnstile.remove(turnstileWidgetId); } catch {}
+        turnstileWidgetId = null;
+      }
+      if (slot) slot.textContent = "";
+
+      turnstileWidgetId = window.turnstile.render(slot, {
+        sitekey: siteKey,
+        execution: "execute",
+        appearance: "interaction-only",
+        theme: getSiteTheme(),
+        callback: (token) => succeed(token),
+        "before-interactive-callback": () => {
+          if (modal) modal.hidden = false;
+        },
+        "expired-callback": () => fail("Verification expired. Please try again."),
+        "error-callback": () => fail("Security check failed. Please try again."),
+      });
+      window.turnstile.execute(turnstileWidgetId);
+    });
+  } finally {
+    if (buttonEl) {
+      buttonEl.classList.remove("is-verifying");
+      buttonEl.disabled = prevDisabled;
+    }
+    if (labelEl && labelEl.textContent === "Verifying…") labelEl.textContent = prevLabel;
+  }
+}
+
 downloadPdfBtn.addEventListener("click", async () => {
   if (downloadPdfBtn.disabled) return;
   ensurePdfFontsRegistered();
@@ -2280,6 +2377,23 @@ downloadPdfBtn.addEventListener("click", async () => {
   hideWorkbenchError();
 
   try {
+    const turnstileToken = await verifyWithTurnstile(downloadPdfBtn, downloadPdfBtnTitle);
+    if (turnstileToken) {
+      downloadPdfBtn.disabled = true;
+      downloadPdfBtn.classList.add("is-verifying");
+      if (downloadPdfBtnTitle) downloadPdfBtnTitle.textContent = "Verifying…";
+      const vRes = await fetch("/api/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ turnstileToken }),
+      });
+      if (!vRes.ok) {
+        const vErr = await vRes.json().catch(() => ({}));
+        throw new Error(vErr.error || "Security check failed. Please try again.");
+      }
+      downloadPdfBtn.classList.remove("is-verifying");
+    }
+
     downloadPdfBtn.disabled = true;
     downloadPdfBtn.classList.add("is-building");
     if (downloadPdfBtnTitle) downloadPdfBtnTitle.textContent = "Preparing PDF…";
@@ -3337,8 +3451,20 @@ tailorBtn.addEventListener("click", async () => {
     return;
   }
 
-  isTailoring = true;
   el("workspaceError").hidden = true;
+  let turnstileToken = "";
+  try {
+    turnstileToken = await verifyWithTurnstile(tailorBtn, tailorBtn.querySelector("span"));
+  } catch (err) {
+    showError({
+      title: "Security check incomplete",
+      message: err?.message || "Please try again.",
+      actions: [{ label: "Try again", onClick: () => { el("workspaceError").hidden = true; tailorBtn.click(); } }],
+    });
+    return;
+  }
+
+  isTailoring = true;
   setTailorBtnBusy(true, "Tailoring…");
 
   showView("viewProcessing");
@@ -3349,6 +3475,8 @@ tailorBtn.addEventListener("click", async () => {
   activeRequestId = crypto.randomUUID();
   const body = {
     requestId: activeRequestId,
+    sessionId: getOrCreateSessionId(),
+    turnstileToken,
     cvType,
     cvText: cvType === "text" ? textVal : "",
     cvImages: cvType === "pdf-images" ? cvImages : [],

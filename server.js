@@ -27,6 +27,7 @@ const {
   formatPdfCaption,
   formatErrorMessage,
 } = require('./lib/telegram');
+const { getTurnstileConfig, verifyTurnstileToken } = require('./lib/turnstile');
 
 const {
   platformMaxDurationMs: PLATFORM_MAX_DURATION_MS,
@@ -298,11 +299,43 @@ function resolveMaxTokens(value, reasoningEffort) {
   return resolveModelMaxTokens(value, reasoningEffort, MAX_TOKENS_CEILING);
 }
 
+app.get("/api/config", (req, res) => {
+  const turnstile = getTurnstileConfig(process.env);
+  res.json({ turnstileSiteKey: turnstile.enabled ? turnstile.siteKey : "" });
+});
+
+app.post("/api/verify", async (req, res) => {
+  const turnstile = getTurnstileConfig(process.env);
+  if (!turnstile.enabled) return res.json({ ok: true, skipped: true });
+  const check = await verifyTurnstileToken({
+    token: req.body?.turnstileToken,
+    secretKey: turnstile.secretKey,
+    remoteIp: getClientIp(req),
+  });
+  if (!check.ok) return res.status(403).json({ ok: false, error: check.error });
+  res.json({ ok: true });
+});
+
 app.post("/api/tailor", async (req, res) => {
   req.activityId = makeRequestId(req.body?.requestId);
   const sessionId = req.body?.sessionId ? sanitizeSessionId(req.body.sessionId) : undefined;
   const tailorLog = (event, fields = {}) =>
     logWithErrors(event, { sessionId, jobTitle: req.body?.jobTitle, route: "/api/tailor", ...fields });
+  const turnstile = getTurnstileConfig(process.env);
+  if (turnstile.enabled) {
+    const check = await verifyTurnstileToken({
+      token: req.body?.turnstileToken,
+      secretKey: turnstile.secretKey,
+      remoteIp: getClientIp(req),
+    });
+    if (!check.ok) {
+      await tailorLog("turnstile_failed", {
+        requestId: req.activityId,
+        detail: (check.codes || []).join(", ") || check.error,
+      });
+      return res.status(403).json({ error: check.error, requestId: req.activityId });
+    }
+  }
   if (NVIDIA_API_KEYS.length === 0) {
     await tailorLog("configuration_missing", { requestId: req.activityId, detail: "No provider API key configured" });
     return res.status(503).json({ error: FRIENDLY_ERROR, requestId: req.activityId });

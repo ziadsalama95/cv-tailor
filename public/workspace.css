@@ -361,6 +361,24 @@ html[data-theme="dark"] .topbar { background: rgba(15, 23, 42, 0.94) !important;
   }
 }
 
+.btn.is-verifying, .cta.is-verifying {
+  opacity: 0.9;
+  cursor: wait;
+}
+.btn.is-verifying::before, .cta.is-verifying::before {
+  content: "";
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  animation: btnSpin 0.65s linear infinite;
+  flex: none;
+}
+@keyframes btnSpin { to { transform: rotate(360deg); } }
+.turnstile-modal__panel { max-width: 380px; text-align: center; }
+.turnstile-widget-slot { display: flex; justify-content: center; margin: 14px 0 6px; min-height: 65px; }
+
 @media (max-width: 960px) {
   .builder-studio { grid-template-columns: 1fr; }
   .builder-preview { position: static; }
