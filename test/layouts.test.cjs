@@ -125,6 +125,7 @@ test('the server prompt offers exactly the layouts the client can render', () =>
   }
   assert.ok(prompts.includes('layout.reason'), 'the prompt must ask for a reason, not just a label');
   assert.match(prompts, /Omit "contact\.location"/i);
+  assert.match(prompts, /Target Job Title/i);
 });
 
 test('contact builder omits location when missing or placeholder', () => {
