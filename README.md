@@ -6,6 +6,15 @@
 
 CV Tailor accepts an existing resume or a newly created CV, adapts its language to a target role, and gives the user an editable preview before export. The workflow is designed to keep the candidate in control: generated content can be reviewed and edited, and missing information is marked rather than invented.
 
+## Screenshots
+
+<p align="center">
+  <img src="public/assets/cv-tailor-homepage.png" width="49%" alt="CV Tailor homepage and product preview" />
+  <img src="public/assets/cv-tailor-workspace.png" width="49%" alt="Resume editing workspace with source and target-job inputs" />
+</p>
+
+<p align="center"><sub>Product homepage</sub> &nbsp; · &nbsp; <sub>Resume tailoring workspace</sub></p>
+
 ## Product capabilities
 
 - **Flexible source material:** upload PDF or DOCX, paste resume text, or build a CV from scratch. Job details can be entered directly, with support for a job-posting screenshot.
