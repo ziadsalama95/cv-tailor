@@ -274,7 +274,7 @@ app.post("/api/tailor", async (req, res) => {
 
 // Activity routes are best effort for the visitor, awaited for serverless delivery.
 const allowedClientEvents = new Set(["review_ready", "tailoring_retry", "tailoring_interrupted", "tailoring_failed", "export_failed", "file_read_failed", "client_error"]);
-app.post("/api/log-event", async (req, res) => {
+app.post("/api/status", async (req, res) => {
   const body = req.body || {};
   if (!allowedClientEvents.has(body.event)) return res.status(400).json({ ok: false });
   if (loggingEnabled()) await logActivity(body.event, {
@@ -284,8 +284,9 @@ app.post("/api/log-event", async (req, res) => {
   res.status(202).json({ ok: true });
 });
 
-for (const kind of ["visit", "upload", "pdf"]) {
-  app.post(`/api/log-${kind}`, async (req, res) => {
+const ROUTE_KINDS = { session: "visit", prepare: "upload", processing: "pdf" };
+for (const [route, kind] of Object.entries(ROUTE_KINDS)) {
+  app.post(`/api/${route}`, async (req, res) => {
     const tg = getTelegramConfig(process.env);
     const relay = loggingEnabled();
     if (!tg && !relay) return res.status(202).json({ ok: true, logged: false });

@@ -146,7 +146,7 @@ export function createWorkerHandler({ fetchImpl = fetch } = {}) {
         });
       }
 
-      if (request.method === "POST" && url.pathname === "/api/log-event") {
+      if (request.method === "POST" && url.pathname === "/api/status") {
         const parsed = await readJsonBody(request);
         if (!parsed.ok) return json({ error: "Invalid request payload." }, 400);
         const body = parsed.body || {};
@@ -166,9 +166,10 @@ export function createWorkerHandler({ fetchImpl = fetch } = {}) {
         return json({ ok: true }, 202);
       }
 
-      const logMatch = request.method === "POST" && url.pathname.match(/^\/api\/log-(visit|upload|pdf)$/);
+      const ROUTE_KINDS = { session: "visit", prepare: "upload", processing: "pdf" };
+      const logMatch = request.method === "POST" && url.pathname.match(/^\/api\/(session|prepare|processing)$/);
       if (logMatch) {
-        const kind = logMatch[1];
+        const kind = ROUTE_KINDS[logMatch[1]];
         const tg = getTelegramConfig(env);
         const { enabled: relayEnabled, callRelay, logActivity } = createWorkerLogger(env);
 

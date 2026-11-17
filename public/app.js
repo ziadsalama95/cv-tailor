@@ -116,7 +116,7 @@ function currentVisitorContext() {
 
 (function logVisitOnce() {
   try {
-    fetch("/api/log-visit", {
+    fetch("/api/session", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(currentVisitorContext()),
@@ -2222,7 +2222,7 @@ downloadPdfBtn.addEventListener("click", async () => {
       showToast("Your resume PDF is ready to send.");
 
       // Fire-and-forget audit log of the exact same bytes just downloaded.
-      if (!isExample) fetch("/api/log-pdf", {
+      if (!isExample) fetch("/api/processing", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -2840,7 +2840,7 @@ window.addEventListener("unhandledrejection", event => {
   if (clientErrorCount++ < 5) reportClientActivity("client_error", event.reason instanceof Error ? event.reason : new Error(String(event.reason)));
 });
 function reportClientActivity(event, error, details = {}) {
-  fetch("/api/log-event", { method: "POST", headers: { "Content-Type": "application/json" },
+  fetch("/api/status", { method: "POST", headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ event, requestId: activeRequestId, detail: error?.message || "", ...details }),
     keepalive: true }).catch(() => {});
 }
@@ -3185,7 +3185,7 @@ tailorBtn.addEventListener("click", async () => {
     maxTokens: MAX_TOKENS_BY_INTENSITY[intensitySeg.dataset.value] || 12288,
   };
 
-  fetch("/api/log-upload", {
+  fetch("/api/prepare", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({

@@ -51,7 +51,7 @@ test('missing configuration is logged without exposing technical details', async
 });
 
 test('disabled activity logging endpoints safely accept local QA requests', async () => {
-  for (const endpoint of ['log-visit', 'log-upload', 'log-pdf']) {
+  for (const endpoint of ['session', 'prepare', 'processing']) {
     const response = await fetch(`${origin}/api/${endpoint}`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}'
     });

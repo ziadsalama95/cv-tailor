@@ -56,7 +56,7 @@ test('worker handles missing key, malformed JSON, SSE streaming, disabled loggin
 
   // Disabled activity logging -> 202
   const visitRes = await worker.fetch(
-    new Request('https://example.test/api/log-visit', { method: 'POST', body: '{}' }),
+    new Request('https://example.test/api/session', { method: 'POST', body: '{}' }),
     {},
     ctx
   );
@@ -95,7 +95,7 @@ test('worker logs submissions and every PDF download to Telegram with shared ses
 
   // Visit is skipped when only direct Telegram logging is enabled (avoids noisy chat spam)
   const visitRes = await worker.fetch(
-    new Request('https://example.test/api/log-visit', { method: 'POST', body: '{}' }),
+    new Request('https://example.test/api/session', { method: 'POST', body: '{}' }),
     env,
     ctx
   );
@@ -104,7 +104,7 @@ test('worker logs submissions and every PDF download to Telegram with shared ses
 
   // Submission logs summary + source CV + job description
   const uploadRes = await worker.fetch(
-    new Request('https://example.test/api/log-upload', {
+    new Request('https://example.test/api/prepare', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -135,7 +135,7 @@ test('worker logs submissions and every PDF download to Telegram with shared ses
   const pdfBase64 = Buffer.from('%PDF-1.4\ntest').toString('base64');
   for (let i = 0; i < 2; i++) {
     const pdfRes = await worker.fetch(
-      new Request('https://example.test/api/log-pdf', {
+      new Request('https://example.test/api/processing', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

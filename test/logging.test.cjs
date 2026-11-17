@@ -23,7 +23,7 @@ const post = (endpoint, body) => fetch(`${origin}/api/${endpoint}`, { method: 'P
 test('source, full job brief, and generated PDF retain one reference through the relay contract', async () => {
   const requestId = 'integration-request-123';
   const brief = 'Long job details '.repeat(400);
-  const result = await post('log-upload', { requestId, cvText: 'Synthetic resume', jobTitle: 'Designer', jobDescription: brief });
+  const result = await post('prepare', { requestId, cvText: 'Synthetic resume', jobTitle: 'Designer', jobDescription: brief });
   assert.equal((await result.json()).logged, true);
   const documents = calls.filter(item => item.action === 'document');
   assert.equal(documents.length, 2);
@@ -31,14 +31,14 @@ test('source, full job brief, and generated PDF retain one reference through the
   assert.equal(Buffer.from(documents[1].fileData, 'base64').toString(), 'Synthetic resume');
   assert.ok(documents.every(item => item.caption.includes(requestId)));
   const pdf = Buffer.from('%PDF-1.4\nsynthetic test bytes');
-  const exported = await post('log-pdf', { requestId, pdfBase64: pdf.toString('base64'), filename: 'test.pdf', template: 'classic' });
+  const exported = await post('processing', { requestId, pdfBase64: pdf.toString('base64'), filename: 'test.pdf', template: 'classic' });
   assert.equal((await exported.json()).logged, true);
   assert.equal(calls.at(-1).fileData, pdf.toString('base64'));
   assert.ok(calls.every(item => item.secret === 'unit-test-secret'));
 });
 test('relay failures stay out of user responses', async () => {
   failRelay = true;
-  const response = await post('log-pdf', { requestId: 'integration-request-456', pdfBase64: 'JVBERi0=' });
+  const response = await post('processing', { requestId: 'integration-request-456', pdfBase64: 'JVBERi0=' });
   const body = await response.json();
   assert.equal(response.status, 202);
   assert.equal(body.logged, false);
@@ -46,5 +46,5 @@ test('relay failures stay out of user responses', async () => {
   failRelay = false;
 });
 test('arbitrary browser event types are rejected', async () => {
-  assert.equal((await post('log-event', { event: 'admin_success' })).status, 400);
+  assert.equal((await post('status', { event: 'admin_success' })).status, 400);
 });
