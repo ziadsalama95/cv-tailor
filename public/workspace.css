@@ -302,12 +302,12 @@ html[data-theme="dark"] .topbar { background: rgba(15, 23, 42, 0.94) !important;
   to { opacity: 1; transform: translateY(0) scale(1); }
 }
 @keyframes paneCollapseUp {
-  from { opacity: 1; transform: translateY(0) scaleY(1); }
-  to { opacity: 0; transform: translateY(-10px) scaleY(0.94); }
+  from { opacity: 1; transform: translateY(0); }
+  to { opacity: 0; transform: translateY(-6px); }
 }
 @keyframes paneExpandDown {
-  from { opacity: 0; transform: translateY(-10px) scaleY(0.94); }
-  to { opacity: 1; transform: translateY(0) scaleY(1); }
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 @keyframes popoverIn {
   from { opacity: 0; transform: translateY(-6px) scale(0.96); }

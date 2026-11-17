@@ -3500,9 +3500,8 @@ tailorBtn.addEventListener("click", async () => {
     invalid.forEach(markFieldInvalid);
     if (invalid[0] === cvDropZone) {
       cvDropZone.scrollIntoView({ behavior: "smooth", block: "center" });
-      cvDropZone.focus({ preventScroll: true });
     } else {
-      invalid[0].focus();
+      invalid[0].scrollIntoView({ behavior: "smooth", block: "center" });
     }
     showError({
       title: "Missing required details",
@@ -3675,7 +3674,6 @@ tailorBtn.addEventListener("click", async () => {
     const target = !cvText.hidden ? cvText : dropZone && !dropZone.hidden ? dropZone : fileInfo && !fileInfo.hidden ? fileInfo : dropZone || fileInfo;
     if (!target) return;
     target.scrollIntoView({ behavior: "smooth", block: "center" });
-    (cvText.hidden ? (target === fileInfo ? jobTitle : cvDropZone) : cvText).focus({ preventScroll: true });
     // Give a brief visual cue that this is the field to interact with.
     const pulseClass = target === fileInfo ? "file-card--pulse" : "drop-zone--pulse";
     target.classList.add(pulseClass);
@@ -3717,6 +3715,8 @@ function updateReadiness() {
   if (tailorBtn) tailorBtn.classList.toggle("is-incomplete", !ready && !isProcessingFile);
 }
 
+let sourceAnimToken = 0;
+
 async function switchSource(mode) {
   if (mode === sourceMode || isProcessingFile || isTailoring) return;
   if (mode === "paste" && uploadedFileName) {
@@ -3728,13 +3728,16 @@ async function switchSource(mode) {
   sourceMode = mode;
   sourceUpload.setAttribute("aria-pressed", String(mode === "upload"));
   sourcePaste.setAttribute("aria-pressed", String(mode === "paste"));
+  const token = ++sourceAnimToken;
   const cvTextCaption = el("cvTextCaption");
   const outgoing = mode === "paste" ? cvDropZone : cvText;
   const incoming = mode === "paste" ? cvText : cvDropZone;
   const reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   const swap = () => {
-    outgoing.removeAttribute("data-pane-anim");
+    if (token !== sourceAnimToken) return;
+    cvDropZone.removeAttribute("data-pane-anim");
+    cvText.removeAttribute("data-pane-anim");
     cvText.hidden = mode !== "paste";
     if (cvTextCaption) cvTextCaption.hidden = mode !== "paste";
     cvDropZone.hidden = mode === "paste";
@@ -3743,7 +3746,6 @@ async function switchSource(mode) {
     markFieldValid(cvText);
     markFieldValid(cvDropZone);
     updateReadiness();
-    incoming.focus();
   };
 
   if (reduceMotion || outgoing.hidden) {
@@ -3758,7 +3760,6 @@ sourceUpload.addEventListener("click", () => switchSource("upload"));
 sourcePaste.addEventListener("click", () => switchSource("paste"));
 el("dismissWorkspaceError").addEventListener("click", () => {
   el("workspaceError").hidden = true;
-  (cvText.hidden ? (cvDropZone.hidden ? jobTitle : cvDropZone) : cvText).focus();
 });
 el("dismissWorkbenchError").addEventListener("click", hideWorkbenchError);
 [cvText, jobTitle, jobCompany, jobLocation, jobDescription].forEach((field) => field.addEventListener("input", updateReadiness));
@@ -3843,7 +3844,6 @@ const cvBuilder = initCvBuilder({
     showView("viewInput");
     requestAnimationFrame(() => {
       jobTitle?.scrollIntoView({ behavior: "smooth", block: "center" });
-      jobTitle?.focus({ preventScroll: true });
     });
     showToast("Your built CV is loaded. Add the target job details and click Tailor.");
   },

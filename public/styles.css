@@ -131,8 +131,6 @@ button, a, .cta, .tool-btn, .tool-icon-btn, .zoom-btn, .zoom-level,
   -webkit-tap-highlight-color: transparent;
   -webkit-touch-callout: none;
 }
-.cta:active { transform: translateY(0) scale(0.98); }
-.tool-btn:active, .tool-icon-btn:active, .topbar__cta:active { transform: scale(0.96); }
 button:focus-visible, a:focus-visible, .drop-zone:focus-visible, .brand:focus-visible {
   outline: 2px solid var(--primary);
   outline-offset: 2px;
@@ -306,7 +304,7 @@ button { font-family: inherit; }
   box-shadow: 0 4px 14px var(--primary-glow);
   transition: background 0.15s, transform 0.15s, box-shadow 0.15s;
 }
-.topbar__cta:hover { background: var(--primary-hover); transform: translateY(-1px); }
+.topbar__cta:hover { background: var(--primary-hover); }
 
 body.on-workbench .topbar__cta {
   display: none;
@@ -327,7 +325,7 @@ body.on-workbench .topbar__cta {
   position: relative;
   transition: background .15s, border-color .15s, transform .15s;
 }
-.theme-toggle:hover { border-color: var(--panel-border-hover); transform: translateY(-1px); }
+.theme-toggle:hover { border-color: var(--panel-border-hover); }
 .theme-toggle svg { position: absolute; transition: opacity .25s ease, transform .4s cubic-bezier(0.16,1,0.3,1); }
 .theme-toggle .icon-sun { opacity: 0; transform: rotate(-90deg) scale(0.6); }
 .theme-toggle .icon-moon { opacity: 1; transform: rotate(0deg) scale(1); }
@@ -1505,7 +1503,7 @@ html[data-theme="dark"] .job-summary-card__body-viewport::before {
   gap: 8px;
   transition: transform .15s, background .15s, box-shadow .15s;
 }
-.btn--cta:hover { background: var(--primary-btn-hover); transform: translateY(-1px); }
+.btn--cta:hover { background: var(--primary-btn-hover); }
 .btn--cta:disabled { cursor: progress; opacity: 0.85; transform: none; }
 
 /* Primary download CTA - two-line copy (what it is + why it's good). */

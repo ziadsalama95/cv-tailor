@@ -762,7 +762,7 @@ export function initCvBuilder({ renderResume, onFinish, onDownloadPdf, onTailor,
       if (nameInput) {
         nameInput.setAttribute("aria-invalid", "true");
         nameInput.classList.add("is-invalid");
-        nameInput.focus();
+        nameInput.scrollIntoView({ behavior: "smooth", block: "center" });
         nameInput.addEventListener("input", () => {
           nameInput.removeAttribute("aria-invalid");
           nameInput.classList.remove("is-invalid");
