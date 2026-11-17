@@ -1496,6 +1496,36 @@ function scheduleLayoutRealPages() {
   });
 }
 
+let a4MeasurePaper = null;
+function estimateA4PageCount() {
+  if (!cvDocumentPaper) return 1;
+  const w = cvDocumentPaper.offsetWidth;
+  // 210mm at 96dpi is ~793.7px; only use offscreen A4 mirror when responsive CSS narrows the paper
+  if (w >= 785) {
+    const singlePageH = w * (297 / 210);
+    return Math.max(1, Math.ceil((cvDocumentPaper.scrollHeight - 12) / singlePageH));
+  }
+  if (!a4MeasurePaper) {
+    a4MeasurePaper = document.createElement("div");
+    a4MeasurePaper.id = "a4MeasurePaper";
+    a4MeasurePaper.setAttribute("aria-hidden", "true");
+    a4MeasurePaper.style.cssText =
+      "position:fixed;left:-99999px;top:0;visibility:hidden;pointer-events:none;z-index:-1;";
+    document.body.appendChild(a4MeasurePaper);
+  }
+  a4MeasurePaper.className = cvDocumentPaper.className;
+  a4MeasurePaper.style.setProperty("width", "210mm", "important");
+  a4MeasurePaper.style.setProperty("max-width", "none", "important");
+  a4MeasurePaper.style.setProperty("min-height", "0", "important");
+  a4MeasurePaper.style.setProperty("height", "auto", "important");
+  a4MeasurePaper.style.setProperty("padding", "13mm 14.5mm", "important");
+  a4MeasurePaper.style.setProperty("transform", "none", "important");
+  a4MeasurePaper.innerHTML = cvDocumentPaper.innerHTML;
+  const a4W = a4MeasurePaper.offsetWidth || 794;
+  const singlePageH = a4W * (297 / 210);
+  return Math.max(1, Math.ceil((a4MeasurePaper.scrollHeight - 12) / singlePageH));
+}
+
 function layoutRealPages() {
   if (!cvDocumentPaper || !paperCanvas || isLayingOutPages) return;
   isLayingOutPages = true;
@@ -1507,9 +1537,7 @@ function layoutRealPages() {
 
   const pageEstimateEl = el("pageEstimate");
   if (pageEstimateEl && finalW > 0) {
-    // A4 ratio (297 / 210); allow a tiny 12px tolerance for subpixel rounding
-    const singlePageH = finalW * (297 / 210);
-    const pages = Math.max(1, Math.ceil((finalH - 12) / singlePageH));
+    const pages = estimateA4PageCount();
     pageEstimateEl.textContent = pages === 1 ? "1 page" : `${pages} pages`;
     pageEstimateEl.classList.toggle("is-multi", pages > 1);
   }
