@@ -177,7 +177,7 @@
 
           <!-- Holds extracted resume text (from PDF/DOCX) or direct pasted text when in Paste mode. -->
           <textarea id="cvText" hidden aria-label="Resume text" placeholder="Paste your resume here, including your contact details, experience, education, and skills…"></textarea>
-          <div class="field-caption" id="cvTextCaption" hidden><span>Include contact info, experience, and skills</span><span id="cvTextCount">0 words</span></div>
+          <div class="field-caption" id="cvTextCaption" hidden><span></span><span id="cvTextCount">0 words</span></div>
           <p class="field-error" id="resumeError" hidden>Add your resume to get started.</p>
           <button type="button" class="source-build-link" id="sourceBuild">No resume file? Build a CV from scratch →</button>
         </div>
@@ -424,7 +424,7 @@
 
     <!-- VIEW 3: INTERACTIVE WORKBENCH & EDITABLE DOCUMENT -->
     <div id="viewWorkbench" class="view-page" hidden>
-      <div class="review-heading"><div><p class="eyebrow" id="reviewEyebrow">EDITOR</p><h2 id="reviewHeading" tabindex="-1">Review and refine</h2><p id="reviewContext">Click anywhere on the page to edit before downloading.</p></div></div>
+      <div class="review-heading"><div><p class="eyebrow" id="reviewEyebrow">EDITOR</p><h2 id="reviewHeading" tabindex="-1">Review and refine</h2><p id="reviewContext" hidden></p></div></div>
       <div id="workbenchError" class="workspace-error" role="alert" hidden><span id="workbenchErrorText"></span><button type="button" id="dismissWorkbenchError" aria-label="Dismiss">×</button></div>
 
       <div class="glass-card output-card">
@@ -560,7 +560,6 @@
     <p class="layout-popover__title">Layout</p>
     <p class="layout-popover__why" id="layoutPopoverWhy" hidden></p>
     <div class="layout-popover__list" id="layoutPopoverList"></div>
-    <p class="layout-popover__foot">Your edits stay intact when switching layouts.</p>
   </div>
 
   <div class="placeholder-popover" id="placeholderPopover" role="dialog" aria-label="Placeholder options" hidden>

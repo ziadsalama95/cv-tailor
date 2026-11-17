@@ -3490,9 +3490,10 @@ function setReviewContext(example) {
   isExample = example;
   el("reviewEyebrow").textContent = example ? "EXAMPLE" : "EDITOR";
   el("reviewHeading").textContent = example ? "Example resume" : "Review and refine";
-  el("reviewContext").textContent = example
-    ? "Sample data with full inline editing enabled."
-    : [jobTitle.value.trim(), jobCompany.value.trim()].filter(Boolean).join(" at ") || "Click anywhere on the page to edit before downloading.";
+  const contextText = example ? "" : [jobTitle.value.trim(), jobCompany.value.trim()].filter(Boolean).join(" at ");
+  const contextEl = el("reviewContext");
+  contextEl.textContent = contextText;
+  contextEl.hidden = !contextText;
 }
 
 function loadBuilderIntoWorkbench(data, plainText) {
@@ -3506,7 +3507,7 @@ function loadBuilderIntoWorkbench(data, plainText) {
   uploadedFileName = `${data.name}_Resume.pdf`;
   layoutRecommendation = {
     key: data.layout?.recommended || "chronological",
-    reason: "Selected in CV Builder.",
+    reason: "",
   };
   renderExecutiveResume(data, DEFAULT_TEMPLATE, layoutRecommendation.key);
   originalCvData = JSON.parse(JSON.stringify(data));

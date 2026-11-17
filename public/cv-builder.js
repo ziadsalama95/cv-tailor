@@ -249,7 +249,7 @@ export function buildCvDataFromState(state = {}) {
     title: cleanStr(s.title),
     layout: {
       recommended: layoutKey,
-      reason: "Selected in CV Builder.",
+      reason: "",
     },
     contact: {
       email: cleanStr(s.email),
