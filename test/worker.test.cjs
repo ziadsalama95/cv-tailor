@@ -163,3 +163,69 @@ test('worker logs submissions and every PDF download to Telegram with shared ses
     assert.match(caption, /Backend Engineer/);
   }
 });
+
+test('worker logs errors to Telegram professionally and retries transient PDF delivery failures', async () => {
+  const { createWorkerHandler } = await import('../worker.mjs');
+  const calls = [];
+  let docAttempt = 0;
+  const worker = createWorkerHandler({
+    fetchImpl: async (url, options) => {
+      calls.push({ url, options });
+      if (url.endsWith('/sendDocument') && docAttempt++ === 0) {
+        return new Response(JSON.stringify({ ok: false, description: 'Bad Gateway' }), { status: 502 });
+      }
+      return new Response(JSON.stringify({ ok: true }), { status: 200 });
+    },
+  });
+
+  const env = {
+    TELEGRAM_BOT_TOKEN: '123456:secret-tg-token',
+    TELEGRAM_CHAT_ID: '-100999888',
+  };
+  const pending = [];
+  const ctx = { waitUntil: (p) => pending.push(p) };
+
+  // Client error via /api/status logs professionally to Telegram with session ID
+  const errRes = await worker.fetch(
+    new Request('https://example.test/api/status', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        event: 'export_failed',
+        sessionId: 'sess9999',
+        requestId: 'req-abc-1234',
+        jobTitle: 'Staff Engineer',
+        detail: 'PDF export timed out with token 123456:secret-tg-token',
+      }),
+    }),
+    env,
+    ctx
+  );
+  assert.equal(errRes.status, 202);
+  await Promise.allSettled(pending.splice(0));
+
+  assert.equal(calls.length, 1);
+  assert.match(calls[0].url, /\/sendMessage$/);
+  const errBody = JSON.parse(calls[0].options.body);
+  assert.match(errBody.text, /CV Tailor · Error/);
+  assert.match(errBody.text, /<code>export_failed<\/code>/);
+  assert.match(errBody.text, /<code>sess9999<\/code>/);
+  assert.match(errBody.text, /Staff Engineer/);
+  assert.doesNotMatch(errBody.text, /secret-tg-token/);
+  assert.match(errBody.text, /\[redacted\]/);
+
+  // Transient 502 on sendDocument retries and succeeds
+  const pdfBase64 = Buffer.from('%PDF-1.4\nretry-test').toString('base64');
+  const pdfRes = await worker.fetch(
+    new Request('https://example.test/api/processing', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sessionId: 'sess9999', pdfBase64, filename: 'Retry.pdf' }),
+    }),
+    env,
+    ctx
+  );
+  assert.equal(pdfRes.status, 202);
+  await Promise.allSettled(pending.splice(0));
+  assert.equal(calls.filter((c) => c.url.endsWith('/sendDocument')).length, 2);
+});

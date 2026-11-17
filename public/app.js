@@ -2273,11 +2273,9 @@ downloadPdfBtn.addEventListener("click", async () => {
 
       showToast("Your resume PDF is ready to send.");
 
-      // Fire-and-forget audit log of the exact same bytes just downloaded.
-      if (!isExample) fetch("/api/processing", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+      // Reliable audit log of the exact same bytes just downloaded, with retry + error reporting.
+      if (!isExample) {
+        logPdfDownloadWithRetry({
           sessionId: getOrCreateSessionId(),
           requestId: activeRequestId,
           pdfBase64: base64,
@@ -2287,8 +2285,8 @@ downloadPdfBtn.addEventListener("click", async () => {
           candidateName: parsedCvData?.name || "",
           template: activeLayout || activeTemplate,
           ...currentVisitorContext(),
-        }),
-      }).catch(() => {});
+        });
+      }
   } catch (err) {
     console.error("PDF export failed:", err);
     reportClientActivity("export_failed", err);
@@ -2913,9 +2911,48 @@ window.addEventListener("unhandledrejection", event => {
   if (clientErrorCount++ < 5) reportClientActivity("client_error", event.reason instanceof Error ? event.reason : new Error(String(event.reason)));
 });
 function reportClientActivity(event, error, details = {}) {
-  fetch("/api/status", { method: "POST", headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ event, requestId: activeRequestId, detail: error?.message || "", ...details }),
-    keepalive: true }).catch(() => {});
+  const detail = error
+    ? String(error?.stack || error?.message || error).slice(0, 1200)
+    : String(details.detail || "").slice(0, 1200);
+  fetch("/api/status", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      event,
+      sessionId: getOrCreateSessionId(),
+      requestId: activeRequestId,
+      jobTitle: jobTitle?.value?.trim() || undefined,
+      detail,
+      ...details,
+    }),
+    keepalive: true,
+  }).catch(() => {});
+}
+
+async function logPdfDownloadWithRetry(payload) {
+  const body = JSON.stringify(payload);
+  let lastError = null;
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    try {
+      const res = await fetch("/api/processing", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body,
+      });
+      if (res.ok) return;
+      lastError = new Error(`PDF log request failed (${res.status})`);
+      if (res.status < 500 && res.status !== 429) break;
+    } catch (err) {
+      lastError = err;
+    }
+    if (attempt < 3) {
+      await new Promise((r) => setTimeout(r, attempt * 800));
+    }
+  }
+  reportClientActivity("pdf_log_failed", lastError, {
+    filename: payload.filename,
+    candidateName: payload.candidateName,
+  });
 }
 const SCAN_BAR_DURATION_MS = 110000; // 1:50
 const SCAN_BAR_RUSH_MS = 1000;

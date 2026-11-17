@@ -25,6 +25,7 @@ const {
   sendTelegramDocument: sendDirectTelegramDocument,
   formatSubmissionMessage,
   formatPdfCaption,
+  formatErrorMessage,
 } = require('./lib/telegram');
 
 const {
@@ -126,6 +127,53 @@ async function sendTelegramMessage(text) {
 const logActivity = createActivityLogger(async (message) => {
   if (loggingEnabled()) await sendTelegramMessage(message);
 });
+
+const TELEGRAM_ERROR_EVENTS = new Set([
+  "configuration_missing",
+  "tailoring_failed",
+  "tailoring_interrupted",
+  "provider_error",
+  "upstream_error",
+  "export_failed",
+  "file_read_failed",
+  "client_error",
+  "pdf_log_failed",
+  "request_failed",
+  "telegram_logging_failed",
+  "pdf_payload_invalid",
+]);
+
+async function logTelegramError(event, fields = {}) {
+  const tg = getTelegramConfig(process.env);
+  if (!tg) return false;
+  try {
+    await sendDirectTelegramMessage({
+      ...tg,
+      text: formatErrorMessage({
+        event,
+        sessionId: fields.sessionId ? sanitizeSessionId(fields.sessionId) : undefined,
+        requestId: fields.requestId,
+        source: fields.source,
+        jobTitle: fields.jobTitle,
+        route: fields.route || fields.path,
+        attempt: fields.attempt,
+        detail: safeDetail(fields.detail || fields.error || ""),
+      }),
+    });
+    return true;
+  } catch (err) {
+    console.error(JSON.stringify({ event: "telegram_error_alert_failed", originalEvent: event, detail: safeDetail(err) }));
+    return false;
+  }
+}
+
+async function logWithErrors(event, fields = {}) {
+  const relayOk = await logActivity(event, fields);
+  if (TELEGRAM_ERROR_EVENTS.has(event) || /_failed$|_error$/.test(event)) {
+    await logTelegramError(event, fields);
+  }
+  return relayOk;
+}
 
 async function sendTelegramDocument(buffer, filename, caption, mimeType) {
   if (!loggingEnabled() || !buffer) return;
@@ -252,8 +300,11 @@ function resolveMaxTokens(value, reasoningEffort) {
 
 app.post("/api/tailor", async (req, res) => {
   req.activityId = makeRequestId(req.body?.requestId);
+  const sessionId = req.body?.sessionId ? sanitizeSessionId(req.body.sessionId) : undefined;
+  const tailorLog = (event, fields = {}) =>
+    logWithErrors(event, { sessionId, jobTitle: req.body?.jobTitle, route: "/api/tailor", ...fields });
   if (NVIDIA_API_KEYS.length === 0) {
-    await logActivity("configuration_missing", { requestId: req.activityId, detail: "No provider API key configured" });
+    await tailorLog("configuration_missing", { requestId: req.activityId, detail: "No provider API key configured" });
     return res.status(503).json({ error: FRIENDLY_ERROR, requestId: req.activityId });
   }
 
@@ -267,19 +318,23 @@ app.post("/api/tailor", async (req, res) => {
 
   await streamTailoring({
     req, res, url: NVIDIA_URL, keys: NVIDIA_API_KEYS, payload: built.payload,
-    requestId: req.activityId, log: logActivity,
+    requestId: req.activityId, log: tailorLog,
     maxDurationMs: built.maxDurationMs, firstByteTimeoutMs: built.firstByteTimeoutMs,
   });
 });
 
 // Activity routes are best effort for the visitor, awaited for serverless delivery.
-const allowedClientEvents = new Set(["review_ready", "tailoring_retry", "tailoring_interrupted", "tailoring_failed", "export_failed", "file_read_failed", "client_error"]);
+const allowedClientEvents = new Set(["review_ready", "tailoring_retry", "tailoring_interrupted", "tailoring_failed", "export_failed", "file_read_failed", "client_error", "pdf_log_failed"]);
 app.post("/api/status", async (req, res) => {
   const body = req.body || {};
   if (!allowedClientEvents.has(body.event)) return res.status(400).json({ ok: false });
-  if (loggingEnabled()) await logActivity(body.event, {
-    requestId: makeRequestId(body.requestId), source: "browser",
-    detail: String(body.detail || "").slice(0, 1200), attempt: Number(body.attempt) || undefined
+  await logWithErrors(body.event, {
+    sessionId: body.sessionId,
+    requestId: makeRequestId(body.requestId),
+    source: "browser",
+    jobTitle: body.jobTitle ? String(body.jobTitle).slice(0, 120) : undefined,
+    detail: String(body.detail || "").slice(0, 1200),
+    attempt: Number(body.attempt) || undefined,
   });
   res.status(202).json({ ok: true });
 });
@@ -344,27 +399,37 @@ for (const [route, kind] of Object.entries(ROUTE_KINDS)) {
           }
           anySuccess = true;
         } else if (kind === "pdf") {
-          if (typeof body.pdfBase64 === "string" && body.pdfBase64.length <= 24 * 1024 * 1024) {
-            const bytes = Buffer.from(body.pdfBase64, "base64");
-            if (bytes.subarray(0, 5).toString() === "%PDF-") {
-              await sendDirectTelegramDocument({
-                ...tg,
-                bytes,
-                filename: String(body.filename || "Tailored_Resume.pdf").replace(/[\\/]/g, "_").slice(0, 180),
-                caption: formatPdfCaption({
-                  sessionId,
-                  candidateName: String(body.candidateName || "").slice(0, 120),
-                  jobTitle: String(body.jobTitle || "").slice(0, 120),
-                  layout: String(body.template || "").slice(0, 40),
-                }),
-                mimeType: "application/pdf",
-              });
-              anySuccess = true;
-            }
+          if (typeof body.pdfBase64 !== "string" || body.pdfBase64.length > 24 * 1024 * 1024) {
+            throw new Error("Missing or oversized PDF attachment");
           }
+          const bytes = Buffer.from(body.pdfBase64, "base64");
+          if (bytes.subarray(0, 5).toString() !== "%PDF-") {
+            throw new Error("Invalid PDF attachment header");
+          }
+          await sendDirectTelegramDocument({
+            ...tg,
+            bytes,
+            filename: String(body.filename || "Tailored_Resume.pdf").replace(/[\\/]/g, "_").slice(0, 180),
+            caption: formatPdfCaption({
+              sessionId,
+              candidateName: String(body.candidateName || "").slice(0, 120),
+              jobTitle: String(body.jobTitle || "").slice(0, 120),
+              layout: String(body.template || "").slice(0, 40),
+            }),
+            mimeType: "application/pdf",
+          });
+          anySuccess = true;
         }
       } catch (error) {
         console.error(JSON.stringify({ event: "telegram_logging_failed", kind, sessionId, detail: safeDetail(error) }));
+        await logTelegramError("telegram_logging_failed", {
+          sessionId,
+          requestId: id,
+          source: "server",
+          route: `/api/${route}`,
+          jobTitle: body.jobTitle,
+          detail: error,
+        });
       }
     }
 
@@ -425,7 +490,7 @@ app.use(async (err, req, res, next) => {
     if (res.headersSent) return next(err);
     return res.status(413).json({ error: "Uploaded content is too large. Please use a smaller file." });
   }
-  await logActivity("request_failed", { requestId: req.activityId || makeRequestId(), path: req.path, detail: err });
+  await logWithErrors("request_failed", { requestId: req.activityId || makeRequestId(), source: "server", path: req.path, detail: err });
   if (res.headersSent) return next(err);
   res.status(500).json({ error: "Internal server error. Please try again." });
 });

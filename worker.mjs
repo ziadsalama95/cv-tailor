@@ -16,6 +16,7 @@ const {
   sendTelegramDocument,
   formatSubmissionMessage,
   formatPdfCaption,
+  formatErrorMessage,
 } = telegramMod;
 
 const ALLOWED_CLIENT_EVENTS = new Set([
@@ -26,6 +27,23 @@ const ALLOWED_CLIENT_EVENTS = new Set([
   "export_failed",
   "file_read_failed",
   "client_error",
+  "pdf_log_failed",
+]);
+
+const TELEGRAM_ERROR_EVENTS = new Set([
+  "configuration_missing",
+  "tailoring_failed",
+  "tailoring_interrupted",
+  "provider_error",
+  "upstream_error",
+  "export_failed",
+  "file_read_failed",
+  "client_error",
+  "pdf_log_failed",
+  "request_failed",
+  "telegram_logging_failed",
+  "pdf_payload_invalid",
+  "worker_error",
 ]);
 
 function json(data, status = 200) {
@@ -50,15 +68,16 @@ function sanitizeEnvValue(raw) {
   return v;
 }
 
-function createWorkerLogger(env) {
+function createWorkerLogger(env, fetchImpl = fetch) {
   const url = sanitizeEnvValue(env?.LOG_API_URL);
   const secret = sanitizeEnvValue(env?.LOG_API_SECRET);
   const enabled = Boolean(url && secret);
-  const secrets = [env?.NVIDIA_API_KEY, secret];
+  const tg = getTelegramConfig(env);
+  const secrets = [env?.NVIDIA_API_KEY, secret, tg?.botToken, tg?.chatId].filter(Boolean);
 
   const callRelay = async (action, payload) => {
     if (!enabled) return;
-    const res = await fetch(url, {
+    const res = await fetchImpl(url, {
       method: "POST",
       headers: { "Content-Type": "text/plain;charset=utf-8" },
       body: JSON.stringify({ secret, action, ...payload }),
@@ -71,12 +90,44 @@ function createWorkerLogger(env) {
     return body;
   };
 
-  const logActivity = createActivityLogger(async (text) => {
+  const logRelayActivity = createActivityLogger(async (text) => {
     if (!enabled) return;
     await callRelay("message", { text, parseMode: "HTML", disablePreview: true });
   }, secrets);
 
-  return { enabled, callRelay, logActivity };
+  const logTelegramError = async (event, fields = {}) => {
+    if (!tg) return false;
+    try {
+      await sendTelegramMessage({
+        ...tg,
+        fetchImpl,
+        text: formatErrorMessage({
+          event,
+          sessionId: fields.sessionId ? sanitizeSessionId(fields.sessionId) : undefined,
+          requestId: fields.requestId,
+          source: fields.source,
+          jobTitle: fields.jobTitle,
+          route: fields.route || fields.path,
+          attempt: fields.attempt,
+          detail: safeDetail(fields.detail || fields.error || "", secrets),
+        }),
+      });
+      return true;
+    } catch (err) {
+      console.error(JSON.stringify({ event: "telegram_error_alert_failed", originalEvent: event, detail: safeDetail(err, secrets) }));
+      return false;
+    }
+  };
+
+  const logActivity = async (event, fields = {}) => {
+    const relayOk = enabled ? await logRelayActivity(event, fields) : false;
+    if (TELEGRAM_ERROR_EVENTS.has(event) || /_failed$|_error$/.test(event)) {
+      await logTelegramError(event, fields);
+    }
+    return relayOk;
+  };
+
+  return { enabled, callRelay, logActivity, logTelegramError };
 }
 
 async function readJsonBody(request) {
@@ -108,6 +159,7 @@ export function createWorkerHandler({ fetchImpl = fetch } = {}) {
     async fetch(request, env = {}, ctx = {}) {
       const url = new URL(request.url);
       const waitUntil = typeof ctx?.waitUntil === "function" ? (p) => ctx.waitUntil(p) : undefined;
+      try {
 
       if (request.method === "POST" && url.pathname === "/api/tailor") {
         const parsed = await readJsonBody(request);
@@ -115,11 +167,14 @@ export function createWorkerHandler({ fetchImpl = fetch } = {}) {
 
         const body = parsed.body && typeof parsed.body === "object" ? parsed.body : {};
         const reqId = makeRequestId(body.requestId);
+        const sessionId = body.sessionId ? sanitizeSessionId(body.sessionId) : undefined;
         const keys = getApiKeys(env);
-        const { logActivity } = createWorkerLogger(env);
+        const { logActivity } = createWorkerLogger(env, fetchImpl);
+        const tailorLog = (event, fields = {}) =>
+          logActivity(event, { sessionId, jobTitle: body.jobTitle, route: "/api/tailor", ...fields });
 
         if (keys.length === 0) {
-          const logPromise = logActivity("configuration_missing", {
+          const logPromise = tailorLog("configuration_missing", {
             requestId: reqId,
             detail: "No provider API key configured",
           });
@@ -137,7 +192,7 @@ export function createWorkerHandler({ fetchImpl = fetch } = {}) {
           keys,
           payload: built.payload,
           requestId: reqId,
-          log: logActivity,
+          log: tailorLog,
           fetchImpl,
           maxDurationMs: built.maxDurationMs,
           firstByteTimeoutMs: built.firstByteTimeoutMs,
@@ -152,17 +207,17 @@ export function createWorkerHandler({ fetchImpl = fetch } = {}) {
         const body = parsed.body || {};
         if (!ALLOWED_CLIENT_EVENTS.has(body.event)) return json({ ok: false }, 400);
 
-        const { enabled, logActivity } = createWorkerLogger(env);
-        if (enabled) {
-          const p = logActivity(body.event, {
-            requestId: makeRequestId(body.requestId),
-            source: "browser",
-            detail: String(body.detail || "").slice(0, 1200),
-            attempt: Number(body.attempt) || undefined,
-          });
-          if (waitUntil) waitUntil(p);
-          else await p;
-        }
+        const { logActivity } = createWorkerLogger(env, fetchImpl);
+        const p = logActivity(body.event, {
+          sessionId: body.sessionId,
+          requestId: makeRequestId(body.requestId),
+          source: "browser",
+          jobTitle: body.jobTitle ? String(body.jobTitle).slice(0, 120) : undefined,
+          detail: String(body.detail || "").slice(0, 1200),
+          attempt: Number(body.attempt) || undefined,
+        });
+        if (waitUntil) waitUntil(p);
+        else await p;
         return json({ ok: true }, 202);
       }
 
@@ -171,7 +226,7 @@ export function createWorkerHandler({ fetchImpl = fetch } = {}) {
       if (logMatch) {
         const kind = ROUTE_KINDS[logMatch[1]];
         const tg = getTelegramConfig(env);
-        const { enabled: relayEnabled, callRelay, logActivity } = createWorkerLogger(env);
+        const { enabled: relayEnabled, callRelay, logActivity, logTelegramError } = createWorkerLogger(env, fetchImpl);
 
         if (!tg && !relayEnabled) return json({ ok: true }, 202);
         if (tg && kind === "visit" && !relayEnabled) return json({ ok: true }, 202);
@@ -234,9 +289,13 @@ export function createWorkerHandler({ fetchImpl = fetch } = {}) {
                 });
               }
             } else if (kind === "pdf") {
-              if (typeof body.pdfBase64 !== "string" || body.pdfBase64.length > 24 * 1024 * 1024) return;
+              if (typeof body.pdfBase64 !== "string" || body.pdfBase64.length > 24 * 1024 * 1024) {
+                throw new Error("Missing or oversized PDF attachment");
+              }
               const bytes = base64ToUint8(body.pdfBase64);
-              if (new TextDecoder().decode(bytes.subarray(0, 5)) !== "%PDF-") return;
+              if (new TextDecoder().decode(bytes.subarray(0, 5)) !== "%PDF-") {
+                throw new Error("Invalid PDF attachment header");
+              }
               await sendTelegramDocument({
                 ...tg,
                 bytes,
@@ -253,6 +312,14 @@ export function createWorkerHandler({ fetchImpl = fetch } = {}) {
             }
           } catch (error) {
             console.error(JSON.stringify({ event: "telegram_logging_failed", kind, sessionId, detail: safeDetail(error, secrets) }));
+            await logTelegramError("telegram_logging_failed", {
+              sessionId,
+              requestId: id,
+              source: "worker",
+              route: `/api/${logMatch[1]}`,
+              jobTitle: body.jobTitle,
+              detail: error,
+            });
           }
         };
 
@@ -331,6 +398,17 @@ export function createWorkerHandler({ fetchImpl = fetch } = {}) {
         return env.ASSETS.fetch(request);
       }
       return new Response("Not Found", { status: 404 });
+      } catch (err) {
+        const { logActivity } = createWorkerLogger(env, fetchImpl);
+        const p = logActivity("worker_error", {
+          source: "worker",
+          route: url.pathname,
+          detail: err,
+        });
+        if (waitUntil) waitUntil(p);
+        else await p;
+        return json({ error: "Internal server error. Please try again." }, 500);
+      }
     },
   };
 }
