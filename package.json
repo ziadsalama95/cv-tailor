@@ -1,0 +1,36 @@
+{
+  "name": "cv-tailor",
+  "version": "1.0.0",
+  "description": "Tailor PDF, DOCX, and plain-text resumes to a job description and export a clean A4 PDF.",
+  "main": "server.js",
+  "scripts": {
+    "test": "node --test",
+    "check": "node --check server.js && node --check public/app.js && node --check public/cv-layouts.js && node --check public/cv-icons.js && node --check public/live-resume.js && node --check public/hero-lab.js && node --check public/demo-profiles.js",
+    "start": "node server.js",
+    "build:icons": "node scripts/build-icons.cjs && python3 scripts/build-icon-font.py",
+    "preview": "node scripts/preview.cjs"
+  },
+  "keywords": [
+    "resume",
+    "cv",
+    "ats",
+    "nvidia-nim",
+    "pdfmake",
+    "express"
+  ],
+  "author": "ziadsalama95",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "license": "MIT",
+  "type": "commonjs",
+  "dependencies": {
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "ua-parser-js": "^2.0.10"
+  },
+  "devDependencies": {
+    "bootstrap-icons": "^1.13.1",
+    "simple-icons": "^13.21.0"
+  }
+}
