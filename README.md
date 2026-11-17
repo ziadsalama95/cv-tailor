@@ -92,6 +92,7 @@ test/                 node:test unit and integration tests
 - `NVIDIA_API_KEY` (required): Single key or comma-separated keys for automatic failover on errors/rate limits.
 - `PORT` (optional): HTTP port, defaults to `3000`.
 - `FUNCTION_MAX_DURATION_SECONDS` (optional): Platform timeout in seconds, defaults to `300` to match `vercel.json`.
+- `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` (optional): Direct Telegram Bot API logging for CV submissions and PDF downloads (session-linked, server-side only).
 - `LOG_API_URL`, `LOG_API_SECRET` (optional): External log relay endpoint and shared secret. Logging is disabled when unset.
 
 ## License

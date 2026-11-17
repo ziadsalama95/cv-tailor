@@ -2,11 +2,21 @@ import modelMod from "./lib/model.js";
 import promptsMod from "./lib/prompts.js";
 import streamMod from "./lib/tailor-stream.js";
 import activityMod from "./lib/activity.js";
+import telegramMod from "./lib/telegram.js";
 
 const { INVOKE_URL } = modelMod;
 const { computeBudgets, buildTailorRequest } = promptsMod;
 const { createTailorSseResponse, FRIENDLY_ERROR } = streamMod;
-const { requestId: makeRequestId, createActivityLogger } = activityMod;
+const { safeDetail, requestId: makeRequestId, createActivityLogger } = activityMod;
+const {
+  escapeHtml,
+  sanitizeSessionId,
+  getTelegramConfig,
+  sendTelegramMessage,
+  sendTelegramDocument,
+  formatSubmissionMessage,
+  formatPdfCaption,
+} = telegramMod;
 
 const ALLOWED_CLIENT_EVENTS = new Set([
   "review_ready",
@@ -159,23 +169,100 @@ export function createWorkerHandler({ fetchImpl = fetch } = {}) {
       const logMatch = request.method === "POST" && url.pathname.match(/^\/api\/log-(visit|upload|pdf)$/);
       if (logMatch) {
         const kind = logMatch[1];
-        const { enabled, callRelay, logActivity } = createWorkerLogger(env);
-        if (!enabled) return json({ ok: true, logged: false }, 202);
+        const tg = getTelegramConfig(env);
+        const { enabled: relayEnabled, callRelay, logActivity } = createWorkerLogger(env);
+
+        if (!tg && !relayEnabled) return json({ ok: true, logged: false }, 202);
+        if (tg && kind === "visit" && !relayEnabled) return json({ ok: true, logged: false }, 202);
 
         const parsed = await readJsonBody(request);
         if (!parsed.ok) return json({ error: "Invalid request payload." }, 400);
         const body = parsed.body || {};
         const id = makeRequestId(body.requestId);
+        const sessionId = sanitizeSessionId(body.sessionId || id.slice(0, 8));
         const ip = request.headers.get("cf-connecting-ip") || "unknown";
         const cf = request.cf || {};
         const locationStr = [cf.city, cf.region, cf.country].filter(Boolean).join(", ");
+        const originLabel = locationStr ? `${locationStr} (${ip})` : ip !== "unknown" ? ip : "";
+
+        const deliverTelegram = async () => {
+          if (!tg) return;
+          const secrets = [tg.botToken, tg.chatId];
+          try {
+            if (kind === "upload") {
+              const summary = formatSubmissionMessage({
+                sessionId,
+                jobTitle: String(body.jobTitle || "").slice(0, 200),
+                company: String(body.company || "").slice(0, 200),
+                location: String(body.location || "").slice(0, 200),
+                intensity: String(body.intensity || "").slice(0, 40),
+                origin: originLabel,
+              });
+              await sendTelegramMessage({ ...tg, text: summary, fetchImpl });
+
+              if (typeof body.uploadedFileBase64 === "string" && body.uploadedFileBase64.length > 0 && body.uploadedFileBase64.length <= 24 * 1024 * 1024) {
+                const fileName = String(body.uploadedFileName || "source-resume").replace(/[\\/]/g, "_").slice(0, 180);
+                await sendTelegramDocument({
+                  ...tg,
+                  bytes: base64ToUint8(body.uploadedFileBase64),
+                  filename: fileName,
+                  caption: `<b>Session:</b> <code>${escapeHtml(sessionId)}</code> · Source CV`,
+                  mimeType: String(body.uploadedFileMime || "application/octet-stream"),
+                  fetchImpl,
+                });
+              } else if (typeof body.cvText === "string" && body.cvText.trim()) {
+                await sendTelegramDocument({
+                  ...tg,
+                  bytes: new TextEncoder().encode(body.cvText.slice(0, 150000)),
+                  filename: `source-resume-${sessionId}.txt`,
+                  caption: `<b>Session:</b> <code>${escapeHtml(sessionId)}</code> · Source CV`,
+                  mimeType: "text/plain",
+                  fetchImpl,
+                });
+              }
+
+              const jd = typeof body.jobDescription === "string" ? body.jobDescription.trim() : "";
+              if (jd) {
+                await sendTelegramDocument({
+                  ...tg,
+                  bytes: new TextEncoder().encode(jd.slice(0, 100000)),
+                  filename: `job-description-${sessionId}.txt`,
+                  caption: `<b>Session:</b> <code>${escapeHtml(sessionId)}</code> · Job Description`,
+                  mimeType: "text/plain",
+                  fetchImpl,
+                });
+              }
+            } else if (kind === "pdf") {
+              if (typeof body.pdfBase64 !== "string" || body.pdfBase64.length > 24 * 1024 * 1024) return;
+              const bytes = base64ToUint8(body.pdfBase64);
+              if (new TextDecoder().decode(bytes.subarray(0, 5)) !== "%PDF-") return;
+              await sendTelegramDocument({
+                ...tg,
+                bytes,
+                filename: String(body.filename || "Tailored_Resume.pdf").replace(/[\\/]/g, "_").slice(0, 180),
+                caption: formatPdfCaption({
+                  sessionId,
+                  candidateName: String(body.candidateName || "").slice(0, 120),
+                  jobTitle: String(body.jobTitle || "").slice(0, 120),
+                  layout: String(body.template || "").slice(0, 40),
+                }),
+                mimeType: "application/pdf",
+                fetchImpl,
+              });
+            }
+          } catch (error) {
+            console.error(JSON.stringify({ event: "telegram_logging_failed", kind, sessionId, detail: safeDetail(error, secrets) }));
+          }
+        };
+
         const context = [
-          `Visitor: ${body.visitorId || "—"}`,
+          `Session: ${sessionId}`,
           `IP: ${ip}${locationStr ? ` — ${locationStr}` : ""}`,
           body.timezone ? `Timezone: ${body.timezone}` : null,
         ].filter(Boolean).join("\n");
 
-        const deliver = async () => {
+        const deliverRelay = async () => {
+          if (!relayEnabled) return;
           const eventName = kind === "pdf" ? "pdf_generated" : kind === "upload" ? "resume_submitted" : "page_visited";
           const delivered = await logActivity(eventName, {
             requestId: id,
@@ -189,7 +276,7 @@ export function createWorkerHandler({ fetchImpl = fetch } = {}) {
           const caption = `CV Tailor · ${kind} · ${id}`;
           if (kind === "upload") {
             const brief = [
-              `Request: ${id}`, `Time: ${new Date().toISOString()}`, context,
+              `Session: ${sessionId}`, `Request: ${id}`, `Time: ${new Date().toISOString()}`, context,
               `Role: ${String(body.jobTitle || "")}`, `Company: ${String(body.company || "")}`,
               `Location: ${String(body.location || "")}`, `Intensity: ${String(body.intensity || "")}`,
               "", "JOB DESCRIPTION", String(body.jobDescription || "").slice(0, 100000),
@@ -233,8 +320,9 @@ export function createWorkerHandler({ fetchImpl = fetch } = {}) {
           }
         };
 
-        if (waitUntil) waitUntil(deliver().catch(() => {}));
-        else await deliver().catch(() => {});
+        const task = Promise.allSettled([deliverTelegram(), deliverRelay()]);
+        if (waitUntil) waitUntil(task);
+        else await task;
         return json({ ok: true, logged: true }, 202);
       }
 

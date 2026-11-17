@@ -5,8 +5,26 @@ import { getActiveExample } from "./demo-profiles.js";
 const el = (id) => document.getElementById(id);
 
 const VISITOR_ID_KEY = "cvtailor-visitor-id";
+const SESSION_ID_KEY = "cvtailor-session-id";
 const VISIT_COUNT_KEY = "cvtailor-visit-count";
 const FIRST_SEEN_KEY = "cvtailor-first-seen";
+
+let fallbackSessionId = null;
+function getOrCreateSessionId() {
+  if (fallbackSessionId) return fallbackSessionId;
+  try {
+    let id = sessionStorage.getItem(SESSION_ID_KEY);
+    if (!id) {
+      id = ((crypto.randomUUID && crypto.randomUUID()) || `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`).slice(0, 8);
+      sessionStorage.setItem(SESSION_ID_KEY, id);
+    }
+    fallbackSessionId = id;
+    return id;
+  } catch (e) {
+    fallbackSessionId = ((crypto.randomUUID && crypto.randomUUID()) || `${Date.now().toString(36)}`).slice(0, 8);
+    return fallbackSessionId;
+  }
+}
 
 function getOrCreateVisitorId() {
   try {
@@ -2208,13 +2226,14 @@ downloadPdfBtn.addEventListener("click", async () => {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          sessionId: getOrCreateSessionId(),
           requestId: activeRequestId,
           pdfBase64: base64,
           filename: `${filenameBase}.pdf`,
           jobTitle: jobTitle.value.trim(),
           location: jobLocation.value.trim(),
           candidateName: parsedCvData?.name || "",
-          template: activeTemplate,
+          template: activeLayout || activeTemplate,
           ...currentVisitorContext(),
         }),
       }).catch(() => {});
@@ -3170,6 +3189,7 @@ tailorBtn.addEventListener("click", async () => {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
+      sessionId: getOrCreateSessionId(),
       requestId: activeRequestId,
       cvText: cvType === "text" ? textVal : "",
       uploadedFileName,

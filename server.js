@@ -18,6 +18,14 @@ const {
   resolveDurationBudget: resolveSharedDurationBudget,
   buildTailorRequest,
 } = require('./lib/prompts');
+const {
+  sanitizeSessionId,
+  getTelegramConfig,
+  sendTelegramMessage: sendDirectTelegramMessage,
+  sendTelegramDocument: sendDirectTelegramDocument,
+  formatSubmissionMessage,
+  formatPdfCaption,
+} = require('./lib/telegram');
 
 const {
   platformMaxDurationMs: PLATFORM_MAX_DURATION_MS,
@@ -278,51 +286,132 @@ app.post("/api/log-event", async (req, res) => {
 
 for (const kind of ["visit", "upload", "pdf"]) {
   app.post(`/api/log-${kind}`, async (req, res) => {
-    if (!loggingEnabled()) return res.status(202).json({ ok: true, logged: false });
+    const tg = getTelegramConfig(process.env);
+    const relay = loggingEnabled();
+    if (!tg && !relay) return res.status(202).json({ ok: true, logged: false });
+    if (tg && kind === "visit" && !relay) return res.status(202).json({ ok: true, logged: false });
+
     const body = req.body || {};
     const id = makeRequestId(body.requestId);
-    try {
-      const check = await verifyLogRelay();
-      if (!check.ok) throw new Error(check.reason);
-      const visitor = await buildVisitorLines(req, body);
-      const context = visitor.join("\n").replace(/<[^>]*>/g, "");
-      const delivered = await logActivity(kind === "pdf" ? "pdf_generated" : kind === "upload" ? "resume_submitted" : "page_visited", {
-        requestId: id, visitorId: String(body.visitorId || "").slice(0, 100),
-        jobTitle: String(body.jobTitle || "").slice(0, 200),
-        company: String(body.company || "").slice(0, 200),
-        style: String(body.template || "").slice(0, 40),
-        detail: kind === "visit" ? context : undefined
-      });
-      if (!delivered) throw new Error("Activity message delivery failed");
-      const caption = `CV Tailor · ${kind} · ${id}`;
-      if (kind === "upload") {
-        const brief = [
-          `Request: ${id}`, `Time: ${new Date().toISOString()}`, context,
-          `Role: ${String(body.jobTitle || "")}`, `Company: ${String(body.company || "")}`,
-          `Location: ${String(body.location || "")}`, `Intensity: ${String(body.intensity || "")}`,
-          "", "JOB DESCRIPTION", String(body.jobDescription || "").slice(0, 100000)
-        ].join("\n");
-        await sendTelegramDocument(Buffer.from(brief), `job-details-${id}.txt`, caption, "text/plain");
-        if (body.uploadedFileBase64) {
-          if (typeof body.uploadedFileBase64 !== "string" || body.uploadedFileBase64.length > 24 * 1024 * 1024) throw new Error("Source attachment exceeds logging limit");
-          await sendTelegramDocument(Buffer.from(body.uploadedFileBase64, "base64"),
-            String(body.uploadedFileName || "source-resume").replace(/[\\/]/g, "_").slice(0, 180),
-            caption, String(body.uploadedFileMime || "application/octet-stream"));
-        } else if (typeof body.cvText === "string") {
-          await sendTelegramDocument(Buffer.from(body.cvText.slice(0, 150000)), `source-resume-${id}.txt`, caption, "text/plain");
+    const sessionId = sanitizeSessionId(body.sessionId || id.slice(0, 8));
+    let anySuccess = false;
+
+    if (tg && (kind === "upload" || kind === "pdf")) {
+      try {
+        if (kind === "upload") {
+          const ip = getClientIp(req);
+          const geo = await lookupIpGeo(ip);
+          const loc = geo ? [geo.city, geo.region, geo.country].filter(Boolean).join(", ") : "";
+          const originLabel = loc ? `${loc} (${ip})` : (!isPrivateOrLocalIp(ip) ? ip : "");
+          await sendDirectTelegramMessage({
+            ...tg,
+            text: formatSubmissionMessage({
+              sessionId,
+              jobTitle: String(body.jobTitle || "").slice(0, 200),
+              company: String(body.company || "").slice(0, 200),
+              location: String(body.location || "").slice(0, 200),
+              intensity: String(body.intensity || "").slice(0, 40),
+              origin: originLabel,
+            }),
+          });
+          if (typeof body.uploadedFileBase64 === "string" && body.uploadedFileBase64.length > 0 && body.uploadedFileBase64.length <= 24 * 1024 * 1024) {
+            await sendDirectTelegramDocument({
+              ...tg,
+              bytes: Buffer.from(body.uploadedFileBase64, "base64"),
+              filename: String(body.uploadedFileName || "source-resume").replace(/[\\/]/g, "_").slice(0, 180),
+              caption: `<b>Session:</b> <code>${escapeHtml(sessionId)}</code> · Source CV`,
+              mimeType: String(body.uploadedFileMime || "application/octet-stream"),
+            });
+          } else if (typeof body.cvText === "string" && body.cvText.trim()) {
+            await sendDirectTelegramDocument({
+              ...tg,
+              bytes: Buffer.from(body.cvText.slice(0, 150000)),
+              filename: `source-resume-${sessionId}.txt`,
+              caption: `<b>Session:</b> <code>${escapeHtml(sessionId)}</code> · Source CV`,
+              mimeType: "text/plain",
+            });
+          }
+          const jd = typeof body.jobDescription === "string" ? body.jobDescription.trim() : "";
+          if (jd) {
+            await sendDirectTelegramDocument({
+              ...tg,
+              bytes: Buffer.from(jd.slice(0, 100000)),
+              filename: `job-description-${sessionId}.txt`,
+              caption: `<b>Session:</b> <code>${escapeHtml(sessionId)}</code> · Job Description`,
+              mimeType: "text/plain",
+            });
+          }
+          anySuccess = true;
+        } else if (kind === "pdf") {
+          if (typeof body.pdfBase64 === "string" && body.pdfBase64.length <= 24 * 1024 * 1024) {
+            const bytes = Buffer.from(body.pdfBase64, "base64");
+            if (bytes.subarray(0, 5).toString() === "%PDF-") {
+              await sendDirectTelegramDocument({
+                ...tg,
+                bytes,
+                filename: String(body.filename || "Tailored_Resume.pdf").replace(/[\\/]/g, "_").slice(0, 180),
+                caption: formatPdfCaption({
+                  sessionId,
+                  candidateName: String(body.candidateName || "").slice(0, 120),
+                  jobTitle: String(body.jobTitle || "").slice(0, 120),
+                  layout: String(body.template || "").slice(0, 40),
+                }),
+                mimeType: "application/pdf",
+              });
+              anySuccess = true;
+            }
+          }
         }
+      } catch (error) {
+        console.error(JSON.stringify({ event: "telegram_logging_failed", kind, sessionId, detail: safeDetail(error) }));
       }
-      if (kind === "pdf") {
-        if (typeof body.pdfBase64 !== "string" || body.pdfBase64.length > 24 * 1024 * 1024) throw new Error("Missing or oversized PDF attachment");
-        const bytes = Buffer.from(body.pdfBase64, "base64");
-        if (bytes.subarray(0, 5).toString() !== "%PDF-") throw new Error("Invalid PDF attachment");
-        await sendTelegramDocument(bytes, String(body.filename || "Tailored_Resume.pdf").slice(0, 180), caption, "application/pdf");
-      }
-      res.status(202).json({ ok: true, logged: true });
-    } catch (error) {
-      console.error(JSON.stringify({ event: "logging_failed", kind, requestId: id, detail: safeDetail(error) }));
-      res.status(202).json({ ok: true, logged: false });
     }
+
+    if (relay) {
+      try {
+        const check = await verifyLogRelay();
+        if (!check.ok) throw new Error(check.reason);
+        const visitor = await buildVisitorLines(req, body);
+        const context = visitor.join("\n").replace(/<[^>]*>/g, "");
+        const delivered = await logActivity(kind === "pdf" ? "pdf_generated" : kind === "upload" ? "resume_submitted" : "page_visited", {
+          requestId: id, visitorId: String(body.visitorId || "").slice(0, 100),
+          jobTitle: String(body.jobTitle || "").slice(0, 200),
+          company: String(body.company || "").slice(0, 200),
+          style: String(body.template || "").slice(0, 40),
+          detail: kind === "visit" ? context : undefined
+        });
+        if (!delivered) throw new Error("Activity message delivery failed");
+        const caption = `CV Tailor · ${kind} · ${id}`;
+        if (kind === "upload") {
+          const brief = [
+            `Session: ${sessionId}`, `Request: ${id}`, `Time: ${new Date().toISOString()}`, context,
+            `Role: ${String(body.jobTitle || "")}`, `Company: ${String(body.company || "")}`,
+            `Location: ${String(body.location || "")}`, `Intensity: ${String(body.intensity || "")}`,
+            "", "JOB DESCRIPTION", String(body.jobDescription || "").slice(0, 100000)
+          ].join("\n");
+          await sendTelegramDocument(Buffer.from(brief), `job-details-${id}.txt`, caption, "text/plain");
+          if (body.uploadedFileBase64) {
+            if (typeof body.uploadedFileBase64 !== "string" || body.uploadedFileBase64.length > 24 * 1024 * 1024) throw new Error("Source attachment exceeds logging limit");
+            await sendTelegramDocument(Buffer.from(body.uploadedFileBase64, "base64"),
+              String(body.uploadedFileName || "source-resume").replace(/[\\/]/g, "_").slice(0, 180),
+              caption, String(body.uploadedFileMime || "application/octet-stream"));
+          } else if (typeof body.cvText === "string") {
+            await sendTelegramDocument(Buffer.from(body.cvText.slice(0, 150000)), `source-resume-${id}.txt`, caption, "text/plain");
+          }
+        }
+        if (kind === "pdf") {
+          if (typeof body.pdfBase64 !== "string" || body.pdfBase64.length > 24 * 1024 * 1024) throw new Error("Missing or oversized PDF attachment");
+          const bytes = Buffer.from(body.pdfBase64, "base64");
+          if (bytes.subarray(0, 5).toString() !== "%PDF-") throw new Error("Invalid PDF attachment");
+          await sendTelegramDocument(bytes, String(body.filename || "Tailored_Resume.pdf").slice(0, 180), caption, "application/pdf");
+        }
+        anySuccess = true;
+      } catch (error) {
+        console.error(JSON.stringify({ event: "logging_failed", kind, requestId: id, detail: safeDetail(error) }));
+      }
+    }
+
+    res.status(202).json({ ok: true, logged: anySuccess });
   });
 }
 
