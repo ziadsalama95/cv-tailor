@@ -2250,6 +2250,12 @@ function getActivePdfTheme() {
 let turnstileSiteKeyPromise = null;
 let turnstileScriptPromise = null;
 let turnstileWidgetId = null;
+let readyTurnstileToken = "";
+let readyTurnstileAt = 0;
+let turnstileInFlightPromise = null;
+let turnstileNeedsInteraction = false;
+let turnstileUserWaiting = false;
+const TURNSTILE_TTL_MS = 240000; // Refresh before Cloudflare's 300s expiry
 
 async function getTurnstileSiteKey() {
   if (!turnstileSiteKeyPromise) {
@@ -2270,48 +2276,50 @@ function loadTurnstileScript() {
       s.async = true;
       s.defer = true;
       s.onload = () => resolve();
-      s.onerror = () => reject(new Error("Could not load security check."));
+      s.onerror = () => {
+        turnstileScriptPromise = null;
+        reject(new Error("Could not load security check."));
+      };
       document.head.appendChild(s);
     });
   }
   return turnstileScriptPromise;
 }
 
-async function verifyWithTurnstile(buttonEl, labelEl) {
-  const siteKey = await getTurnstileSiteKey();
-  if (!siteKey) return "";
-
-  const prevLabel = labelEl ? labelEl.textContent : "";
-  const prevDisabled = buttonEl ? buttonEl.disabled : false;
-  if (buttonEl) {
-    buttonEl.disabled = true;
-    buttonEl.classList.add("is-verifying");
-  }
-  if (labelEl) labelEl.textContent = "Verifying…";
-
-  const modal = el("turnstileModal");
-  const slot = el("turnstileWidget");
-  const cancelBtn = el("turnstileModalCancel");
-
-  try {
+function runTurnstileChallenge() {
+  if (turnstileInFlightPromise) return turnstileInFlightPromise;
+  turnstileInFlightPromise = (async () => {
+    const siteKey = await getTurnstileSiteKey();
+    if (!siteKey) return "";
     await loadTurnstileScript();
-    return await new Promise((resolve, reject) => {
+
+    const modal = el("turnstileModal");
+    const slot = el("turnstileWidget");
+    const cancelBtn = el("turnstileModalCancel");
+
+    return new Promise((resolve, reject) => {
       let settled = false;
+      turnstileNeedsInteraction = false;
       const cleanup = () => {
         if (modal) modal.hidden = true;
         if (cancelBtn) cancelBtn.onclick = null;
+        turnstileNeedsInteraction = false;
       };
       const fail = (msg) => {
         if (settled) return;
         settled = true;
+        readyTurnstileToken = "";
+        readyTurnstileAt = 0;
         cleanup();
         reject(new Error(msg));
       };
       const succeed = (token) => {
         if (settled) return;
         settled = true;
+        readyTurnstileToken = token || "";
+        readyTurnstileAt = Date.now();
         cleanup();
-        resolve(token || "");
+        resolve(readyTurnstileToken);
       };
 
       if (cancelBtn) cancelBtn.onclick = () => fail("Verification cancelled.");
@@ -2328,14 +2336,66 @@ async function verifyWithTurnstile(buttonEl, labelEl) {
         theme: getSiteTheme(),
         callback: (token) => succeed(token),
         "before-interactive-callback": () => {
-          if (modal) modal.hidden = false;
+          turnstileNeedsInteraction = true;
+          if (turnstileUserWaiting && modal) modal.hidden = false;
         },
-        "expired-callback": () => fail("Verification expired. Please try again."),
+        "expired-callback": () => {
+          readyTurnstileToken = "";
+          readyTurnstileAt = 0;
+          if (!settled) fail("Verification expired. Please try again.");
+          else prewarmTurnstile();
+        },
         "error-callback": () => fail("Security check failed. Please try again."),
       });
       window.turnstile.execute(turnstileWidgetId);
     });
+  })().finally(() => {
+    turnstileInFlightPromise = null;
+  });
+  return turnstileInFlightPromise;
+}
+
+function prewarmTurnstile() {
+  getTurnstileSiteKey().then((siteKey) => {
+    if (!siteKey) return;
+    if (readyTurnstileToken && Date.now() - readyTurnstileAt < TURNSTILE_TTL_MS) return;
+    runTurnstileChallenge().catch(() => {});
+  });
+}
+
+async function verifyWithTurnstile(buttonEl, labelEl) {
+  const siteKey = await getTurnstileSiteKey();
+  if (!siteKey) return "";
+
+  if (readyTurnstileToken && Date.now() - readyTurnstileAt < TURNSTILE_TTL_MS) {
+    const token = readyTurnstileToken;
+    readyTurnstileToken = "";
+    readyTurnstileAt = 0;
+    setTimeout(prewarmTurnstile, 0);
+    return token;
+  }
+
+  const prevLabel = labelEl ? labelEl.textContent : "";
+  const prevDisabled = buttonEl ? buttonEl.disabled : false;
+  if (buttonEl) {
+    buttonEl.disabled = true;
+    buttonEl.classList.add("is-verifying");
+  }
+  if (labelEl) labelEl.textContent = "Verifying…";
+
+  turnstileUserWaiting = true;
+  const modal = el("turnstileModal");
+  if (turnstileNeedsInteraction && modal) modal.hidden = false;
+
+  try {
+    const token = await runTurnstileChallenge();
+    readyTurnstileToken = "";
+    readyTurnstileAt = 0;
+    setTimeout(prewarmTurnstile, 0);
+    return token;
   } finally {
+    turnstileUserWaiting = false;
+    if (modal) modal.hidden = true;
     if (buttonEl) {
       buttonEl.classList.remove("is-verifying");
       buttonEl.disabled = prevDisabled;
@@ -2343,6 +2403,8 @@ async function verifyWithTurnstile(buttonEl, labelEl) {
     if (labelEl && labelEl.textContent === "Verifying…") labelEl.textContent = prevLabel;
   }
 }
+
+prewarmTurnstile();
 
 downloadPdfBtn.addEventListener("click", async () => {
   if (downloadPdfBtn.disabled) return;
