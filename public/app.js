@@ -2333,11 +2333,16 @@ function runTurnstileChallenge() {
     return new Promise((resolve, reject) => {
       let settled = false;
       turnstileNeedsInteraction = false;
+      const onEsc = (e) => {
+        if (e.key === "Escape" && modal && !modal.hidden) fail("Verification cancelled.");
+      };
       const cleanup = () => {
         if (modal) modal.hidden = true;
         if (cancelBtn) cancelBtn.onclick = null;
+        document.removeEventListener("keydown", onEsc);
         turnstileNeedsInteraction = false;
       };
+      document.addEventListener("keydown", onEsc);
       const fail = (msg) => {
         if (settled) return;
         settled = true;
